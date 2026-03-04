@@ -8,4 +8,9 @@ export default defineConfig({
     outDir: 'dist',
     assetsDir: 'assets',
   },
+  test: {
+    environment: 'jsdom',
+    include: ['tests/unit/**/*.test.js'],
+    setupFiles: ['tests/unit/setup.js'],
+  },
 })
