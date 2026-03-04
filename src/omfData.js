@@ -1,0 +1,158 @@
+export const OMF_CAUSES = {
+  "Physical Over-Exertion": [
+    "Doing too much in a day: driving, standing, work, childcare, social activity",
+    "Doing anything fast: walking, chores, cleaning, cooking",
+    "Anything that drives a significant (10 BPM) jump in heart rate",
+    "Sudden changes in temperature: either hot or cold",
+    "Other: menstrual cycle, flu shot, blood draws, altitude",
+  ],
+  "Mental Over-Exertion": [
+    "Too much time mentally exerting: reading, studying, working",
+    "Concentrating too much: pushing hard on difficult tasks",
+    "Mental exertion after physical exertion: compounded impact",
+  ],
+  "Emotional Over-Exertion": [
+    "Emotional hit: death of loved one or pet; huge loss",
+    "Negative emotional burst: arguing with a spouse",
+    "Strong positive emotion: watching favorite sports team win",
+    "Increased stress: prolonged or episodic re: financial, work, school",
+    "Anxious thoughts: the emotional exertion due to anxiety",
+    "Sensory overload: parties, movies, lots of people, lots of noise",
+  ],
+  "Sleep Regulation": [
+    "Not sticking to a schedule that works best",
+    "Not sleeping the right number of hours each night",
+    "Sleep disruptions: noise, light, night sweats, insomnia",
+    "Managing time change during travel",
+  ],
+  "Diet & Nutrition": [
+    "Too many carbs/sugar: alcohol, bread, heavily-processed grains, sweets",
+    "Not enough healthy food: protein, vegetables, fiber, whole grains",
+    "Low blood sugar from skipping a meal or not eating at the right time",
+    "Dehydration; low minerals/electrolytes",
+  ],
+  "Other Medical Conditions": [
+    "Depression: escalation or baseline depression",
+    "Anxiety: increased episodes or baseline; panic attacks",
+    "Getting sick: typical cold or flu",
+    "Pain: managing chronic pain",
+    "GI issues: nausea, digestion challenges, constipation (e.g. SIBO)",
+    "Adjustments to medications",
+    "Positional changes: with or without formal OI diagnosis",
+  ],
+};
+
+export const OMF_BARRIERS = {
+  "No Signal of Coming PEM": [
+    "No explanation: PEM seems to appear randomly",
+    "No warning: body doesn't tell me until it's too late",
+    "No playbook: not knowing how much I can handle on a particular day",
+    "Lack of knowledge: not sure how I will react to activity or foods",
+    "Not immediate: crash can be delayed by days, making trigger hard to identify",
+  ],
+  "Lack of a Support Team": [
+    "No one who provides physical support",
+    "No one who helps plan a PEM-free approach or records symptoms",
+    "Tasks are hard to hand off: working, parenting, caring for parents",
+    "Hard to let go of responsibilities",
+    "Feeling of guilt when family needs to do more",
+  ],
+  "Maintaining Motivation": [
+    "No one who provides encouragement and emotional support",
+    "Sometimes I don't eat healthy because I want comfort food",
+    "Making packaged food is easier than healthy food",
+    "Trade-off between physical and psychological wellness",
+  ],
+  "Emotional/Psychological Challenges": [
+    "Emotional triggers can come out of nowhere",
+    "Anxiety about the future or phobias I cannot control",
+    "Too tired to go to therapist or session is exhausting",
+    "Depression from being sick for so long",
+    "Falling behind depresses me, so I try to keep up",
+  ],
+  "Social Pressure": [
+    "Reputation: don't want to be known as sick/lazy",
+    "Lack of control: out with friends, can't control when I leave",
+    "Fear of missing out",
+    "Asking friends to make sacrifices",
+    "Embarrassment: wheelchair, handicapped parking, etc.",
+  ],
+  "Invisible Illness": [
+    "Some people don't believe ME/CFS is real",
+    "Friends don't understand the illness or its unpredictability",
+    "Hard to explain: how I can do some things but not others",
+  ],
+  "Financial Pressure": [
+    "Need to work to provide for family or self",
+    "Poor health insurance",
+    "High cost of healthy food and supplements",
+    "Lack a stable place to live",
+  ],
+  "Logistics": [
+    "Tracking activities and symptoms is a lot of work",
+    "Hard to keep up with prescriptions and pill boxes",
+    "Easy to forget doses when going out",
+    "Doctor appointments can be exhausting",
+    "Travel: dehydration, poor diet, long walks, mismanaged meds",
+  ],
+};
+
+export const OMF_STRATEGIES = {
+  "Plan Your Schedule": [
+    "Set yourself up for success: do a bit less; don't push to maximize output",
+    "Have a daily activity plan: break tasks into smaller pieces; take breaks",
+    "Schedule rest: even if you don't think it is needed",
+    "Build a meal plan: start day with healthy pre-prepared breakfast",
+    "Plan the week: schedule rest before and/or after big activities",
+  ],
+  "Pace Yourself": [
+    "Reduce overall activity levels: delegate, simplify, eliminate",
+    "Use timers to measure activity and set end times",
+    "Set constraints BEFORE you begin an activity",
+    "Be flexible: adjust plans per your body's signals",
+    "STOP immediately when at risk of overexerting",
+    "Practice task switching between mental and physical exertion",
+    "Conduct self-assessments frequently",
+  ],
+  "Learn Your Health Patterns": [
+    "Track activities and symptoms daily",
+    "Keep a health journal with qualitative descriptions",
+    "Engage your support team for tracking and pattern recognition",
+    "Use a tracking device: count steps, measure heart rate",
+  ],
+  "Build Support Community": [
+    "Identify your support community: family, co-workers, friends",
+    "Get outside help: housekeeping, meal service",
+    "Delegate whatever you can: errands, cleaning, food prep",
+    "Help your support community understand ME/CFS",
+    "Maintain the strength of your support community",
+  ],
+  "Good Nutrition": [
+    "Consult a nutritionist",
+    "Try specific dietary plans: gluten free, dairy free, low carb",
+    "Determine what works best for your body",
+    "Carry healthy snacks to avoid low blood sugar",
+    "Consider many small meals throughout the day",
+    "Ensure hydration",
+    "Never skip a meal, even if nauseous",
+    "Create meal plans in advance",
+  ],
+  "Appropriate Sleep": [
+    "Know how much sleep you need and stay consistent",
+    "Don't oversleep or undersleep",
+    "Create effective sleep environment: quiet, dark, correct temperature",
+  ],
+  "Emotional Health": [
+    "Actively treat anxiety and depression",
+    "Create a mindfulness practice: meditation, yoga, breathing",
+    "Find enjoyable stimulating activities: schedule time for fun",
+    "Join or establish a support group",
+    "Let stresses go to reduce emotional overexertion",
+    "Be kind to yourself: crashes happen involuntarily",
+  ],
+  "Treat Other Conditions": [
+    "Identify other medical afflictions impacting recovery",
+    "Actively treat: sleep disorders, POTS, SIBO, etc.",
+    "Manage pain with medications and mindfulness",
+  ],
+};

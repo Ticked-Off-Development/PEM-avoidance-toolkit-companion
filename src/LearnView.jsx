@@ -1,0 +1,60 @@
+import { useState } from 'react';
+import { Card } from './components.jsx';
+
+const SECTIONS = [
+  { id: 'what', t: 'What is PEM?', c: 'Post-Exertional Malaise (PEM) is the worsening of symptoms after physical, cognitive, or emotional exertion. It is one of the defining criteria of ME/CFS diagnosis. Crashes can be delayed by hours or even days after the triggering activity, making it difficult to identify what caused them.' },
+  { id: 'pacing', t: 'Pacing \u2014 The Key Strategy', c: 'Experts consider pacing to be the single most important strategy for reducing PEM crashes. The goal is to remain as active as your limited energy allows while taking proactive steps to avoid reaching your personal overexertion point. Set your constraints BEFORE you begin an activity. Use timers. Stop immediately when you sense warning signs. Don\u2019t try to push through when you feel sick or tired.' },
+  { id: 'tracking', t: 'Why Track?', c: 'Patients who track their activities and symptoms find it easier to determine what might be causing crashes and which strategies help reduce them. Rate physical, mental, and emotional activity levels (0-10) and key symptoms (fatigue, pain, nausea/GI, brain fog) at three times each day (AM, midday, PM). Track crashes and brief comments. Look for patterns over weeks \u2014 crashes can be delayed 3-5 days from the triggering activity.' },
+  { id: 'support', t: 'Building a Support Team', c: 'Share your crash avoidance plan with the people in your life who can help. Your support team can assist with tracking, pattern recognition, meal preparation, errands, and emotional encouragement. Help them understand ME/CFS \u2014 it\u2019s an invisible illness. Don\u2019t depend on just one person; maintain the strength of your support community.' },
+  { id: 'steps', t: 'The 4 Steps', c: '1) Find your causes and barriers \u2014 what triggers PEM and what stops you from avoiding it. 2) Pick your strategies \u2014 choose approaches to overcome your barriers. 3) Share with your support team \u2014 implement your plan to the best of your ability. 4) Track your progress \u2014 understand how activities and strategies correlate with symptoms.' },
+  { id: 'tips', t: 'Key Tips', c: 'Schedule rest even if you don\u2019t think you need it. Plan rest before AND after big activities. Reduce, simplify, and delegate. Eat regular, healthy meals and stay hydrated. Create a good sleep environment. Be kind to yourself \u2014 sometimes crashes happen involuntarily and it\u2019s not your fault. Stressing out is mental exertion that can trigger PEM.' },
+];
+
+export default function LearnView() {
+  const [open, setOpen] = useState(null);
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+      <div style={{ fontSize: 15, fontWeight: 600, marginBottom: 4 }}>Learn</div>
+      <div style={{ fontSize: 12, color: 'var(--tx-d)', lineHeight: 1.6, marginBottom: 8 }}>
+        Reference material from the Open Medicine Foundation&rsquo;s PEM Avoidance Toolkit, developed by Jeff Hewitt, Sarah Hewitt, Dana Beltramo Hewitt, Dr. Bonilla, and Dr. Montoya with input from ME/CFS patients.
+      </div>
+
+      {SECTIONS.map(sec => {
+        const isOpen = open === sec.id;
+        return (
+          <div key={sec.id}>
+            <button onClick={() => setOpen(isOpen ? null : sec.id)} style={{
+              width: '100%', background: 'var(--card)', border: '1px solid var(--border)',
+              borderRadius: isOpen ? '12px 12px 0 0' : 12, padding: '16px 18px',
+              textAlign: 'left', display: 'flex', justifyContent: 'space-between',
+              alignItems: 'center', fontSize: 15, fontWeight: 600, color: 'var(--tx)',
+              minHeight: 52, cursor: 'pointer', fontFamily: 'var(--font)',
+              marginBottom: isOpen ? 0 : 0,
+            }}>
+              {sec.t}
+              <span style={{ color: 'var(--tx-d)' }}>{isOpen ? '\u25BE' : '\u25B8'}</span>
+            </button>
+            {isOpen && (
+              <div style={{
+                background: 'var(--surface)', border: '1px solid var(--border)', borderTop: 'none',
+                borderRadius: '0 0 12px 12px', padding: '16px 18px',
+              }}>
+                <p style={{ fontSize: 14, color: 'var(--tx-m)', lineHeight: 1.7, margin: 0 }}>{sec.c}</p>
+              </div>
+            )}
+          </div>
+        );
+      })}
+
+      <Card style={{ textAlign: 'center', marginTop: 8 }}>
+        <div style={{ fontSize: 12, color: 'var(--tx-d)', lineHeight: 1.6 }}>
+          Full toolkit available at<br />
+          <a href="https://omf.ngo/pem-avoidance-toolkit" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--acc)', fontWeight: 500, textDecoration: 'none' }}>
+            omf.ngo/pem-avoidance-toolkit
+          </a>
+        </div>
+      </Card>
+    </div>
+  );
+}
