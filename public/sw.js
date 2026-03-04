@@ -17,18 +17,20 @@ self.addEventListener("activate", function(e) {
 });
 
 self.addEventListener("fetch", function(e) {
-  e.respondWith(
-    caches.match(e.request).then(function(cached) {
-      var fetched = fetch(e.request).then(function(response) {
-        var clone = response.clone();
-        caches.open(CACHE_NAME).then(function(cache) {
-          cache.put(e.request, clone);
+  if (e.request.url.startsWith(self.location.origin)) {
+    e.respondWith(
+      caches.match(e.request).then(function(cached) {
+        var fetched = fetch(e.request).then(function(response) {
+          var clone = response.clone();
+          caches.open(CACHE_NAME).then(function(cache) {
+            cache.put(e.request, clone);
+          });
+          return response;
+        }).catch(function() {
+          return cached;
         });
-        return response;
-      }).catch(function() {
-        return cached;
-      });
-      return cached || fetched;
-    })
-  );
+        return cached || fetched;
+      })
+    );
+  }
 });
