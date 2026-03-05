@@ -43,9 +43,9 @@ export function CrashBadge() {
 }
 
 export function DaySummary({ day, compact }) {
-  const avg = (f) => { const v = avgField(f); return v !== null ? v.toFixed(1) : '\u2014'; };
+  const avg = (f) => { const v = avgField(f); return v !== null ? v.toFixed(1) : '—'; };
   const metrics = [
-    { l: 'Activity', v: day.overall_activity != null && day.overall_activity !== '' ? day.overall_activity : '\u2014', c: activityColor },
+    { l: 'Activity', v: day.overall_activity != null && day.overall_activity !== '' ? day.overall_activity : '—', c: activityColor },
     { l: 'Fatigue', v: avg(day.fatigue), c: symptomColor },
     { l: 'Pain', v: avg(day.pain), c: symptomColor },
     { l: 'Brain Fog', v: avg(day.brain_fog), c: symptomColor },
@@ -100,7 +100,7 @@ export function SymptomRow({ label, data, onChange, highlight }) {
           <div key={p} style={{ flex: 1, textAlign: 'center' }}>
             <div style={{ fontSize: 10, color: 'var(--tx-d)', marginBottom: 4 }}>{['AM', 'Mid', 'PM'][idx]}</div>
             <input
-              type="number" min="0" max="10" placeholder="\u2014"
+              type="number" min="0" max="10" placeholder="—"
               value={data[p]}
               onChange={(e) => {
                 const val = e.target.value;

@@ -40,7 +40,7 @@ export default function TrackView({ data, onEditDay }) {
           <div>
             <div style={{ fontSize: 14, fontWeight: 600 }}>Today &mdash; {formatDate(today)}</div>
             <div style={{ fontSize: 11, color: 'var(--tx-d)', marginTop: 2 }}>
-              {todayData ? 'Tap Edit to update' : 'No entry yet \u2014 tap to log'}
+              {todayData ? 'Tap Edit to update' : 'No entry yet — tap to log'}
             </div>
           </div>
           <BtnP onClick={() => onEditDay(today)} aria-label={todayData ? 'Edit today\'s entry' : 'Log today\'s entry'}>{todayData ? 'Edit' : '+ Log'}</BtnP>

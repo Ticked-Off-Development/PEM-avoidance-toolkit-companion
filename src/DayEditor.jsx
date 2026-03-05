@@ -81,7 +81,7 @@ export default function DayEditor({ day, onSave, onCancel, onDelete }) {
         <SectionLabel>Crash?</SectionLabel>
         <div style={{ fontSize: 11, color: 'var(--tx-d)', marginBottom: 8 }}>A significant set-back in daily function</div>
         <div style={{ display: 'flex', gap: 8 }}>
-          {[{ v: true, l: 'Yes \u2014 Crash' }, { v: false, l: 'No' }].map(opt => (
+          {[{ v: true, l: 'Yes — Crash' }, { v: false, l: 'No' }].map(opt => (
             <button key={String(opt.v)} onClick={() => set('crash', opt.v)} style={{
               borderRadius: 8, padding: '10px 18px', fontSize: 14, fontWeight: 600, minHeight: 44, cursor: 'pointer',
               border: '1px solid', fontFamily: 'var(--font)',

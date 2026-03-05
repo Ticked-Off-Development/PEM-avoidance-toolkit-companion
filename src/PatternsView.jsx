@@ -134,7 +134,7 @@ export default function PatternsView({ data }) {
 
   const av = (arr, fn) => {
     const vals = arr.map(fn).filter(v => v !== null && !isNaN(v));
-    return vals.length > 0 ? (vals.reduce((a, b) => a + b, 0) / vals.length).toFixed(1) : '\u2014';
+    return vals.length > 0 ? (vals.reduce((a, b) => a + b, 0) / vals.length).toFixed(1) : '—';
   };
 
   const numOrNull = v => (v == null || v === '' ? null : (isNaN(Number(v)) ? null : Number(v)));
@@ -208,7 +208,7 @@ export default function PatternsView({ data }) {
       )}
 
       {preCrash.length > 0 && (
-        <Card title="Days Before Crashes \u2014 Activity">
+        <Card title="Days Before Crashes — Activity">
           <div style={{ fontSize: 11, color: 'var(--tx-d)', marginBottom: 10 }}>
             Crashes can be delayed 1-5 days. This shows activity before each crash.
           </div>
@@ -242,8 +242,8 @@ export default function PatternsView({ data }) {
           }
         });
         if (afterBad.length === 0 && afterGood.length === 0) return null;
-        const avgB = afterBad.length > 0 ? (afterBad.reduce((a, b) => a + b, 0) / afterBad.length).toFixed(1) : '\u2014';
-        const avgG = afterGood.length > 0 ? (afterGood.reduce((a, b) => a + b, 0) / afterGood.length).toFixed(1) : '\u2014';
+        const avgB = afterBad.length > 0 ? (afterBad.reduce((a, b) => a + b, 0) / afterBad.length).toFixed(1) : '—';
+        const avgG = afterGood.length > 0 ? (afterGood.reduce((a, b) => a + b, 0) / afterGood.length).toFixed(1) : '—';
 
         return (
           <Card title="Unrefreshing Sleep & Next-Day Symptoms">
