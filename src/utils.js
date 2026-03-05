@@ -61,6 +61,112 @@ export function emptyDay(date) {
   };
 }
 
+export function generateCSV(days) {
+  const headers = [
+    'Date', 'Physical', 'Mental', 'Emotional', 'Overall Activity',
+    'Unrefreshing Sleep', 'Fatigue AM', 'Fatigue Mid', 'Fatigue PM',
+    'Pain AM', 'Pain Mid', 'Pain PM', 'Nausea/GI AM', 'Nausea/GI Mid', 'Nausea/GI PM',
+    'Brain Fog AM', 'Brain Fog Mid', 'Brain Fog PM',
+    'Overall Symptom AM', 'Overall Symptom Mid', 'Overall Symptom PM',
+    'Crash', 'Comments',
+  ];
+  const esc = (v) => {
+    const s = String(v == null ? '' : v);
+    return s.includes(',') || s.includes('"') || s.includes('\n') ? '"' + s.replace(/"/g, '""') + '"' : s;
+  };
+  const rows = [headers.join(',')];
+  days.forEach(d => {
+    rows.push([
+      d.date, d.physical, d.mental, d.emotional, d.overall_activity,
+      d.unrefreshing_sleep === true ? 'Yes' : d.unrefreshing_sleep === false ? 'No' : '',
+      d.fatigue?.am, d.fatigue?.mid, d.fatigue?.pm,
+      d.pain?.am, d.pain?.mid, d.pain?.pm,
+      d.nausea_gi?.am, d.nausea_gi?.mid, d.nausea_gi?.pm,
+      d.brain_fog?.am, d.brain_fog?.mid, d.brain_fog?.pm,
+      d.overall_symptom?.am, d.overall_symptom?.mid, d.overall_symptom?.pm,
+      d.crash ? 'Yes' : d.crash === false ? 'No' : '',
+      d.comments || '',
+    ].map(esc).join(','));
+  });
+  return rows.join('\n');
+}
+
+export function computeCorrelations(days) {
+  const fields = [
+    { key: 'physical', label: 'Physical', get: d => d.physical ? +d.physical : null },
+    { key: 'mental', label: 'Mental', get: d => d.mental ? +d.mental : null },
+    { key: 'emotional', label: 'Emotional', get: d => d.emotional ? +d.emotional : null },
+    { key: 'overall_activity', label: 'Activity', get: d => d.overall_activity ? +d.overall_activity : null },
+    { key: 'fatigue', label: 'Fatigue', get: d => avgField(d.fatigue) },
+    { key: 'pain', label: 'Pain', get: d => avgField(d.pain) },
+    { key: 'brain_fog', label: 'Brain Fog', get: d => avgField(d.brain_fog) },
+    { key: 'overall_symptom', label: 'Symptom', get: d => avgField(d.overall_symptom) },
+  ];
+
+  function pearson(xs, ys) {
+    const pairs = [];
+    for (let i = 0; i < xs.length; i++) {
+      if (xs[i] !== null && ys[i] !== null && !isNaN(xs[i]) && !isNaN(ys[i])) {
+        pairs.push([xs[i], ys[i]]);
+      }
+    }
+    if (pairs.length < 5) return null;
+    const n = pairs.length;
+    const mx = pairs.reduce((s, p) => s + p[0], 0) / n;
+    const my = pairs.reduce((s, p) => s + p[1], 0) / n;
+    let num = 0, dx = 0, dy = 0;
+    pairs.forEach(([x, y]) => {
+      num += (x - mx) * (y - my);
+      dx += (x - mx) ** 2;
+      dy += (y - my) ** 2;
+    });
+    const denom = Math.sqrt(dx * dy);
+    return denom === 0 ? 0 : num / denom;
+  }
+
+  const vectors = fields.map(f => days.map(f.get));
+  const matrix = [];
+  for (let i = 0; i < fields.length; i++) {
+    const row = [];
+    for (let j = 0; j < fields.length; j++) {
+      row.push(i === j ? 1 : pearson(vectors[i], vectors[j]));
+    }
+    matrix.push(row);
+  }
+  return { labels: fields.map(f => f.label), matrix };
+}
+
+export function computeCrashRisk(days) {
+  if (days.length < 7) return null;
+  const nonCrash = days.filter(d => d.crash !== true && d.overall_activity);
+  if (nonCrash.length < 5) return null;
+  const vals = nonCrash.map(d => +d.overall_activity).filter(v => !isNaN(v));
+  if (vals.length < 5) return null;
+  const mean = vals.reduce((a, b) => a + b, 0) / vals.length;
+  const std = Math.sqrt(vals.reduce((s, v) => s + (v - mean) ** 2, 0) / vals.length);
+  const ceiling = mean + std;
+  const recent = days.slice(-3);
+  const recentActs = recent.map(d => d.overall_activity ? +d.overall_activity : null).filter(v => v !== null);
+  if (recentActs.length === 0) return null;
+  const recentAvg = recentActs.reduce((a, b) => a + b, 0) / recentActs.length;
+  return {
+    ceiling: ceiling.toFixed(1),
+    recentAvg: recentAvg.toFixed(1),
+    atRisk: recentAvg > ceiling,
+    mean: mean.toFixed(1),
+  };
+}
+
+export function getLast30Dates() {
+  const dates = [];
+  for (let i = 29; i >= 0; i--) {
+    const d = new Date();
+    d.setDate(d.getDate() - i);
+    dates.push(d.toISOString().split('T')[0]);
+  }
+  return dates;
+}
+
 export function generateExportText(days, plan) {
   const lines = [
     'PEM AVOIDANCE TOOLKIT - TRACKING DATA',

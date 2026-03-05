@@ -24,7 +24,7 @@ export default function LearnView() {
         const isOpen = open === sec.id;
         return (
           <div key={sec.id}>
-            <button onClick={() => setOpen(isOpen ? null : sec.id)} style={{
+            <button onClick={() => setOpen(isOpen ? null : sec.id)} aria-expanded={isOpen} aria-label={sec.t} style={{
               width: '100%', background: 'var(--card)', border: '1px solid var(--border)',
               borderRadius: isOpen ? '12px 12px 0 0' : 12, padding: '16px 18px',
               textAlign: 'left', display: 'flex', justifyContent: 'space-between',

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { formatDate, activityColor, symptomColor } from './utils.js';
 import { SectionLabel, ScoreInput, SymptomRow, BtnP, BtnS, s } from './components.jsx';
 
-export default function DayEditor({ day, onSave, onCancel }) {
+export default function DayEditor({ day, onSave, onCancel, onDelete }) {
   const [form, setForm] = useState(JSON.parse(JSON.stringify(day)));
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
   const setN = (k, sub, v) => setForm(f => ({ ...f, [k]: { ...f[k], [sub]: v } }));
@@ -80,7 +80,19 @@ export default function DayEditor({ day, onSave, onCancel }) {
         <div style={{ fontSize: 11, color: 'var(--tx-d)', marginBottom: 6 }}>Brief reminder, e.g. &quot;Shopping for 3 hours&quot;</div>
         <textarea value={form.comments} onChange={e => set('comments', e.target.value)}
           rows={3} placeholder="A few words about the day&hellip;"
+          aria-label="Comments about the day"
           style={{ ...s.input, resize: 'vertical', fontFamily: 'var(--font)' }} />
+
+        {onDelete && (
+          <div style={{ marginTop: 24, paddingTop: 16, borderTop: '1px solid var(--border)' }}>
+            <button onClick={() => {
+              if (window.confirm('Delete this day entry? This cannot be undone.')) onDelete(form.date);
+            }} aria-label="Delete this day entry" style={{
+              width: '100%', background: 'var(--red-d)', color: 'var(--red)', border: '1px solid rgba(248,113,113,0.3)',
+              borderRadius: 8, padding: '12px 20px', fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'var(--font)', minHeight: 44,
+            }}>Delete This Entry</button>
+          </div>
+        )}
       </div>
     </div>
   );
