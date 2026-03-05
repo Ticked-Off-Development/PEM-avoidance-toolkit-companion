@@ -25,7 +25,7 @@ function HeatmapCalendar({ days }) {
         {cells.map((dateStr, i) => {
           if (!dateStr) return <div key={`empty-${i}`} />;
           const day = dayMap[dateStr];
-          const oa = day?.overall_activity ? +day.overall_activity : null;
+          const oa = day?.overall_activity != null && day?.overall_activity !== '' ? +day.overall_activity : null;
           const hasCrash = day?.crash === true;
           const bg = hasCrash ? 'var(--red)' : oa !== null ? activityColor(oa) : 'var(--bg)';
           const dayNum = new Date(dateStr + 'T12:00:00').getDate();
@@ -130,18 +130,19 @@ export default function PatternsView({ data }) {
   const last14 = days.slice(-14);
   const last30 = days.slice(-30);
   const crashDays = last30.filter(d => d.crash === true);
-  const nonCrash = last30.filter(d => d.crash !== true && d.overall_activity);
+  const nonCrash = last30.filter(d => d.crash !== true && d.overall_activity != null && d.overall_activity !== '');
 
   const av = (arr, fn) => {
     const vals = arr.map(fn).filter(v => v !== null && !isNaN(v));
     return vals.length > 0 ? (vals.reduce((a, b) => a + b, 0) / vals.length).toFixed(1) : '\u2014';
   };
 
+  const numOrNull = v => (v == null || v === '' ? null : (isNaN(Number(v)) ? null : Number(v)));
   const comps = [
-    ['Overall Activity', d => d.overall_activity ? +d.overall_activity : null],
-    ['Physical', d => d.physical ? +d.physical : null],
-    ['Mental', d => d.mental ? +d.mental : null],
-    ['Emotional', d => d.emotional ? +d.emotional : null],
+    ['Overall Activity', d => numOrNull(d.overall_activity)],
+    ['Physical', d => numOrNull(d.physical)],
+    ['Mental', d => numOrNull(d.mental)],
+    ['Emotional', d => numOrNull(d.emotional)],
     ['Fatigue', d => avgField(d.fatigue)],
     ['Pain', d => avgField(d.pain)],
     ['Brain Fog', d => avgField(d.brain_fog)],
@@ -153,14 +154,14 @@ export default function PatternsView({ data }) {
     for (let o = 1; o <= 5; o++) {
       const d = new Date(cd.date + 'T12:00:00');
       d.setDate(d.getDate() - o);
-      const s = d.toISOString().split('T')[0];
+      const s = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
       const found = days.find(x => x.date === s);
       if (found) preCrash.push({ day: found, off: o });
     }
   });
 
   const symTrend = last30.map(d => avgField(d.overall_symptom)).filter(v => v !== null);
-  const actTrend = last30.map(d => d.overall_activity ? Number(d.overall_activity) : null).filter(v => v !== null);
+  const actTrend = last30.map(d => d.overall_activity != null && d.overall_activity !== '' ? Number(d.overall_activity) : null).filter(v => v !== null && !isNaN(v));
   const badSleep = last14.filter(d => d.unrefreshing_sleep === true).length;
 
   return (
@@ -214,7 +215,7 @@ export default function PatternsView({ data }) {
           {[1, 2, 3, 4, 5].map(o => {
             const matching = preCrash.filter(p => p.off === o);
             if (!matching.length) return null;
-            const a = av(matching.map(p => p.day), d => d.overall_activity ? +d.overall_activity : null);
+            const a = av(matching.map(p => p.day), d => numOrNull(d.overall_activity));
             return (
               <div key={o} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '5px 0' }}>
                 <span style={{ width: 80, fontSize: 12, color: 'var(--tx-m)' }}>{o} day{o > 1 ? 's' : ''} before</span>

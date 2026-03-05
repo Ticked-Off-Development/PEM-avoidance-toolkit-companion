@@ -92,14 +92,18 @@ export default function App() {
 
   // Backup: download JSON
   const handleBackup = async () => {
-    const allData = await dbExportAll();
-    const blob = new Blob([JSON.stringify(allData, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `pem-toolkit-backup-${getDateStr()}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
+    try {
+      const allData = await dbExportAll();
+      const blob = new Blob([JSON.stringify(allData, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `pem-toolkit-backup-${getDateStr()}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      alert('Could not create backup. Please try again.');
+    }
   };
 
   // Restore: import JSON
@@ -270,8 +274,10 @@ export default function App() {
       </Suspense>
 
       {/* Export Modal */}
-      {exportOpen && (
-        <div role="dialog" aria-label="Export data" style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', zIndex: 200, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }} onClick={() => setExportOpen(false)}>
+      {exportOpen && (() => {
+        const exportText = generateExportText(data.days, data.plan);
+        return (
+        <div role="dialog" aria-label="Export data" style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', zIndex: 200, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }} onClick={() => setExportOpen(false)} onKeyDown={e => { if (e.key === 'Escape') setExportOpen(false); }}>
           <div onClick={e => e.stopPropagation()} style={{ background: 'var(--surface)', borderRadius: 16, width: '100%', maxWidth: 480, maxHeight: '80dvh', overflowY: 'auto', padding: 24 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
               <span style={{ fontSize: 16, fontWeight: 700 }}>Export & Backup</span>
@@ -281,10 +287,10 @@ export default function App() {
               Share this with your doctor or support team.
             </div>
             <div style={{ background: 'var(--bg)', borderRadius: 8, padding: 14, maxHeight: 200, overflowY: 'auto', fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--tx-m)', lineHeight: 1.6, whiteSpace: 'pre-wrap', border: '1px solid var(--border)' }}>
-              {generateExportText(data.days, data.plan)}
+              {exportText}
             </div>
             <button onClick={() => {
-              navigator.clipboard.writeText(generateExportText(data.days, data.plan)).then(() => alert('Copied to clipboard!'));
+              navigator.clipboard.writeText(exportText).then(() => alert('Copied to clipboard!'));
             }} aria-label="Copy report to clipboard" style={{ width: '100%', marginTop: 12, background: 'var(--acc)', color: '#fff', border: 'none', borderRadius: 8, padding: '12px 20px', fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'var(--font)' }}>
               Copy to Clipboard
             </button>
@@ -310,7 +316,8 @@ export default function App() {
             </div>
           </div>
         </div>
-      )}
+        );
+      })()}
 
       {/* Onboarding Tour Overlay */}
       {tourStep !== null && tourStep < TOUR_STEPS.length && (

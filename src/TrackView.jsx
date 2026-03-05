@@ -8,7 +8,7 @@ export default function TrackView({ data, onEditDay }) {
   const weekDays = Array.from({ length: 7 }, (_, i) => {
     const d = new Date(ws + 'T12:00:00');
     d.setDate(d.getDate() + i);
-    return d.toISOString().split('T')[0];
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
   });
 
   const crashRisk = computeCrashRisk(data.days);
@@ -81,7 +81,7 @@ export default function TrackView({ data, onEditDay }) {
                 </span>
                 {day && (
                   <div style={{ display: 'flex', gap: 3 }}>
-                    {oa && <div style={{ width: 5, height: 5, borderRadius: '50%', background: activityColor(oa) }} />}
+                    {oa != null && oa !== '' && <div style={{ width: 5, height: 5, borderRadius: '50%', background: activityColor(oa) }} />}
                     {avgS !== null && <div style={{ width: 5, height: 5, borderRadius: '50%', background: symptomColor(avgS) }} />}
                   </div>
                 )}

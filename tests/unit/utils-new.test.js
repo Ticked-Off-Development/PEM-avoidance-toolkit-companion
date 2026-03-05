@@ -33,11 +33,11 @@ describe('generateCSV', () => {
   it('includes all expected column headers', () => {
     const csv = generateCSV([]);
     const headers = csv.split('\n')[0].split(',');
-    expect(headers).toHaveLength(23);
+    expect(headers).toHaveLength(27);
     expect(headers[0]).toBe('Date');
     expect(headers[5]).toBe('Unrefreshing Sleep');
-    expect(headers[21]).toBe('Crash');
-    expect(headers[22]).toBe('Comments');
+    expect(headers[25]).toBe('Crash');
+    expect(headers[26]).toBe('Comments');
   });
 
   it('generates one data row per day', () => {
@@ -69,10 +69,10 @@ describe('generateCSV', () => {
       makeDay('2024-01-17', { crash: null }),
     ];
     const lines = generateCSV(days).split('\n');
-    // crash is column index 21
-    expect(lines[1].split(',')[21]).toBe('Yes');
-    expect(lines[2].split(',')[21]).toBe('No');
-    expect(lines[3].split(',')[21]).toBe('');
+    // crash is column index 25 (shifted by 4 for other_symptom columns)
+    expect(lines[1].split(',')[25]).toBe('Yes');
+    expect(lines[2].split(',')[25]).toBe('No');
+    expect(lines[3].split(',')[25]).toBe('');
   });
 
   it('includes symptom AM/Mid/PM values', () => {
@@ -140,8 +140,8 @@ describe('computeCorrelations', () => {
     const result = computeCorrelations(days);
     expect(result).toHaveProperty('labels');
     expect(result).toHaveProperty('matrix');
-    expect(result.labels).toHaveLength(8);
-    expect(result.matrix).toHaveLength(8);
+    expect(result.labels).toHaveLength(9);
+    expect(result.matrix).toHaveLength(9);
   });
 
   it('diagonal values are always 1', () => {

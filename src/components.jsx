@@ -45,7 +45,7 @@ export function CrashBadge() {
 export function DaySummary({ day, compact }) {
   const avg = (f) => { const v = avgField(f); return v !== null ? v.toFixed(1) : '\u2014'; };
   const metrics = [
-    { l: 'Activity', v: day.overall_activity || '\u2014', c: activityColor },
+    { l: 'Activity', v: day.overall_activity != null && day.overall_activity !== '' ? day.overall_activity : '\u2014', c: activityColor },
     { l: 'Fatigue', v: avg(day.fatigue), c: symptomColor },
     { l: 'Pain', v: avg(day.pain), c: symptomColor },
     { l: 'Brain Fog', v: avg(day.brain_fog), c: symptomColor },
@@ -102,7 +102,12 @@ export function SymptomRow({ label, data, onChange, highlight }) {
             <input
               type="number" min="0" max="10" placeholder="\u2014"
               value={data[p]}
-              onChange={(e) => onChange(p, e.target.value)}
+              onChange={(e) => {
+                const val = e.target.value;
+                if (val === '') { onChange(p, val); return; }
+                const n = Number(val);
+                if (!isNaN(n) && n >= 0 && n <= 10) onChange(p, val);
+              }}
               aria-label={`${label} ${['AM', 'Midday', 'PM'][idx]} score`}
               style={{ ...s.input, textAlign: 'center', padding: '8px 4px', fontSize: 14, fontWeight: 600, color: symptomColor(data[p]), minHeight: 40 }}
             />
@@ -115,9 +120,11 @@ export function SymptomRow({ label, data, onChange, highlight }) {
 
 export function Sparkline({ data, color, height = 48 }) {
   if (!data || data.length < 2) return null;
+  const clean = data.filter(v => !isNaN(v));
+  if (clean.length < 2) return null;
   const w = 460;
-  const min = Math.min(...data), max = Math.max(...data), range = max - min || 1;
-  const points = data.map((v, i) => `${(i / (data.length - 1)) * w},${height - ((v - min) / range) * (height - 6) - 3}`).join(' ');
+  const min = Math.min(...clean), max = Math.max(...clean), range = max - min || 1;
+  const points = clean.map((v, i) => `${(i / (clean.length - 1)) * w},${height - ((v - min) / range) * (height - 6) - 3}`).join(' ');
   return (
     <svg width="100%" viewBox={`0 0 ${w} ${height}`} style={{ display: 'block' }} role="img" aria-label="Trend chart">
       <polyline points={points} fill="none" stroke={color} strokeWidth="2" strokeLinejoin="round" />

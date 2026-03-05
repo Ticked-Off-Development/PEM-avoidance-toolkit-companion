@@ -3,12 +3,18 @@ import { formatDate, activityColor, symptomColor } from './utils.js';
 import { SectionLabel, ScoreInput, SymptomRow, BtnP, BtnS, s } from './components.jsx';
 
 export default function DayEditor({ day, onSave, onCancel, onDelete }) {
-  const [form, setForm] = useState(JSON.parse(JSON.stringify(day)));
+  const [form, setForm] = useState(() => {
+    const clone = JSON.parse(JSON.stringify(day));
+    // Restore properties that JSON stringify removes (undefined → missing)
+    if (!clone.other_symptom) clone.other_symptom = { name: '', am: '', mid: '', pm: '' };
+    if (!clone.nausea_gi) clone.nausea_gi = { am: '', mid: '', pm: '' };
+    return clone;
+  });
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
   const setN = (k, sub, v) => setForm(f => ({ ...f, [k]: { ...f[k], [sub]: v } }));
 
   return (
-    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', zIndex: 200, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }} onClick={onCancel}>
+    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', zIndex: 200, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }} onClick={onCancel} onKeyDown={e => { if (e.key === 'Escape') onCancel(); }}>
       <div onClick={e => e.stopPropagation()} style={{ background: 'var(--surface)', borderRadius: '22px 22px 0 0', width: '100%', maxWidth: 520, maxHeight: '92dvh', overflowY: 'auto', padding: '22px 20px 36px', WebkitOverflowScrolling: 'touch' }}>
 
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
@@ -78,7 +84,7 @@ export default function DayEditor({ day, onSave, onCancel, onDelete }) {
 
         <SectionLabel>Comments</SectionLabel>
         <div style={{ fontSize: 11, color: 'var(--tx-d)', marginBottom: 6 }}>Brief reminder, e.g. &quot;Shopping for 3 hours&quot;</div>
-        <textarea value={form.comments} onChange={e => set('comments', e.target.value)}
+        <textarea value={form.comments} maxLength={500} onChange={e => set('comments', e.target.value)}
           rows={3} placeholder="A few words about the day&hellip;"
           aria-label="Comments about the day"
           style={{ ...s.input, resize: 'vertical', fontFamily: 'var(--font)' }} />
