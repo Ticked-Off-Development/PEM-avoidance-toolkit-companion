@@ -1,8 +1,18 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { formatDate, activityColor, symptomColor } from './utils.js';
 import { SectionLabel, ScoreInput, SymptomRow, BtnP, BtnS, s } from './components.jsx';
 
+function trapFocus(e, containerRef) {
+  if (e.key !== 'Tab' || !containerRef.current) return;
+  const focusable = containerRef.current.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
+  if (focusable.length === 0) return;
+  const first = focusable[0], last = focusable[focusable.length - 1];
+  if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+  else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+}
+
 export default function DayEditor({ day, onSave, onCancel, onDelete }) {
+  const modalRef = useRef(null);
   const [form, setForm] = useState(() => {
     const clone = JSON.parse(JSON.stringify(day));
     // Restore properties that JSON stringify removes (undefined → missing)
@@ -14,7 +24,7 @@ export default function DayEditor({ day, onSave, onCancel, onDelete }) {
   const setN = (k, sub, v) => setForm(f => ({ ...f, [k]: { ...f[k], [sub]: v } }));
 
   return (
-    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', zIndex: 200, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }} onClick={onCancel} onKeyDown={e => { if (e.key === 'Escape') onCancel(); }}>
+    <div ref={modalRef} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', zIndex: 200, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }} onClick={onCancel} onKeyDown={e => { if (e.key === 'Escape') onCancel(); trapFocus(e, modalRef); }}>
       <div onClick={e => e.stopPropagation()} style={{ background: 'var(--surface)', borderRadius: '22px 22px 0 0', width: '100%', maxWidth: 520, maxHeight: '92dvh', overflowY: 'auto', padding: '22px 20px 36px', WebkitOverflowScrolling: 'touch' }}>
 
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>

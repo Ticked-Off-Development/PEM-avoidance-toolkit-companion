@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, lazy, Suspense } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef, lazy, Suspense } from 'react';
 import { dbGet, dbSet, dbExportAll, dbImportAll } from './db.js';
 import { emptyDay, generateExportText, generateCSV, getDateStr } from './utils.js';
 
@@ -9,6 +9,15 @@ const LearnView = lazy(() => import('./LearnView.jsx'));
 const DayEditor = lazy(() => import('./DayEditor.jsx'));
 
 const DB_KEY = 'appdata';
+
+function trapFocus(e, containerRef) {
+  if (e.key !== 'Tab' || !containerRef.current) return;
+  const focusable = containerRef.current.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
+  if (focusable.length === 0) return;
+  const first = focusable[0], last = focusable[focusable.length - 1];
+  if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+  else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+}
 
 function defaultData() {
   return { days: [], plan: { causes: [], barriers: [], strategies: [] } };
@@ -34,7 +43,8 @@ export default function App() {
   const [theme, setTheme] = useState('dark');
   const [exportOpen, setExportOpen] = useState(false);
   const [tourStep, setTourStep] = useState(null);
-  const [reminderDismissed, setReminderDismissed] = useState(false);
+  const [reminderDismissed, setReminderDismissed] = useState(() => sessionStorage.getItem('reminderDismissed') === 'true');
+  const exportModalRef = useRef(null);
 
   // Load from IndexedDB
   useEffect(() => {
@@ -172,6 +182,7 @@ export default function App() {
   const today = getDateStr();
   const hasLoggedToday = data ? data.days.some(d => d.date === today) : true;
   const showReminder = onboarded && !loading && !hasLoggedToday && !reminderDismissed && tab === 'track';
+  const printText = useMemo(() => data ? generateExportText(data.days, data.plan) : '', [data]);
 
   if (loading) {
     return (
@@ -247,7 +258,7 @@ export default function App() {
         <div role="alert" style={{ margin: '12px 16px 0', padding: '12px 16px', background: 'var(--acc-d)', border: '1px solid rgba(96,165,250,0.3)', borderRadius: 10, display: 'flex', alignItems: 'center', gap: 10 }}>
           <span style={{ fontSize: 18 }}>{'\uD83D\uDD14'}</span>
           <div style={{ flex: 1, fontSize: 13, color: 'var(--acc)' }}>Don't forget to log today!</div>
-          <button onClick={() => setReminderDismissed(true)} aria-label="Dismiss reminder" style={{ background: 'none', border: 'none', color: 'var(--tx-d)', fontSize: 16, cursor: 'pointer', padding: 4 }}>{'\u2715'}</button>
+          <button onClick={() => { setReminderDismissed(true); sessionStorage.setItem('reminderDismissed', 'true'); }} aria-label="Dismiss reminder" style={{ background: 'none', border: 'none', color: 'var(--tx-d)', fontSize: 16, cursor: 'pointer', padding: 4 }}>{'\u2715'}</button>
         </div>
       )}
 
@@ -277,7 +288,7 @@ export default function App() {
       {exportOpen && (() => {
         const exportText = generateExportText(data.days, data.plan);
         return (
-        <div role="dialog" aria-label="Export data" style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', zIndex: 200, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }} onClick={() => setExportOpen(false)} onKeyDown={e => { if (e.key === 'Escape') setExportOpen(false); }}>
+        <div ref={exportModalRef} role="dialog" aria-label="Export data" style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', zIndex: 200, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }} onClick={() => setExportOpen(false)} onKeyDown={e => { if (e.key === 'Escape') setExportOpen(false); trapFocus(e, exportModalRef); }}>
           <div onClick={e => e.stopPropagation()} style={{ background: 'var(--surface)', borderRadius: 16, width: '100%', maxWidth: 480, maxHeight: '80dvh', overflowY: 'auto', padding: 24 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
               <span style={{ fontSize: 16, fontWeight: 700 }}>Export & Backup</span>
@@ -341,7 +352,7 @@ export default function App() {
       <div className="print-report" aria-hidden="true">
         <h2>PEM Avoidance Toolkit Report</h2>
         <p>Generated: {new Date().toLocaleDateString()}</p>
-        <pre>{data ? generateExportText(data.days, data.plan) : ''}</pre>
+        <pre>{printText}</pre>
       </div>
 
       {/* Bottom Navigation */}
