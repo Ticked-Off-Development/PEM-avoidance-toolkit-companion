@@ -71,7 +71,9 @@ export function generateCSV(days) {
     'Crash', 'Comments',
   ];
   const esc = (v) => {
-    const s = String(v == null ? '' : v);
+    let s = String(v == null ? '' : v);
+    // Guard against CSV formula injection
+    if (s.length > 0 && '=+-@'.includes(s[0])) s = "'" + s;
     return s.includes(',') || s.includes('"') || s.includes('\n') ? '"' + s.replace(/"/g, '""') + '"' : s;
   };
   const rows = [headers.join(',')];

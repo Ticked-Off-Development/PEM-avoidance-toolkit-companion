@@ -3,16 +3,22 @@ import { test, expect } from '@playwright/test';
 // Helper: complete onboarding and dismiss tour
 async function completeOnboarding(page) {
   await page.goto('/');
-  const getStarted = page.getByText('Get Started');
-  if (await getStarted.isVisible({ timeout: 3000 }).catch(() => false)) {
+  // Wait for app to render (either onboarding or main UI)
+  await page.waitForTimeout(1000);
+  // Click Get Started if onboarding is shown
+  const getStarted = page.getByRole('button', { name: 'Get Started' });
+  if (await getStarted.isVisible().catch(() => false)) {
     await getStarted.click();
+    await page.waitForTimeout(500);
     // Dismiss tour steps by clicking Skip
     const skip = page.getByText('Skip');
-    if (await skip.isVisible({ timeout: 2000 }).catch(() => false)) {
+    if (await skip.isVisible({ timeout: 3000 }).catch(() => false)) {
       await skip.click();
+      await page.waitForTimeout(500);
     }
   }
-  await page.waitForTimeout(500);
+  // Wait for header to confirm main UI is rendered
+  await page.locator('header').waitFor({ state: 'visible', timeout: 10000 });
 }
 
 test.describe('Onboarding Tour', () => {

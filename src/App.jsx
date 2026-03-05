@@ -113,8 +113,21 @@ export default function App() {
       try {
         const text = await file.text();
         const parsed = JSON.parse(text);
-        if (typeof parsed !== 'object' || parsed === null) throw new Error('Invalid backup');
-        await dbImportAll(parsed);
+        if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) throw new Error('Invalid backup');
+        // Only allow known keys to prevent prototype pollution and arbitrary data injection
+        const ALLOWED_KEYS = new Set(['appdata', 'onboarded', 'theme', 'tourCompleted', 'reminderTime']);
+        const sanitized = {};
+        for (const [key, value] of Object.entries(parsed)) {
+          if (!ALLOWED_KEYS.has(key)) continue;
+          if (key === 'appdata' && typeof value === 'object' && value !== null) {
+            // Validate appdata shape
+            if (value.days && !Array.isArray(value.days)) continue;
+            if (value.plan && typeof value.plan !== 'object') continue;
+          }
+          sanitized[key] = value;
+        }
+        if (Object.keys(sanitized).length === 0) throw new Error('No valid data found');
+        await dbImportAll(sanitized);
         window.location.reload();
       } catch {
         alert('Could not restore backup. Make sure the file is a valid PEM Toolkit backup.');
