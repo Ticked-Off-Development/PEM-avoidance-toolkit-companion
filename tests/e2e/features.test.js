@@ -195,7 +195,7 @@ test.describe('Day Editor - Delete Entry', () => {
     // Create an entry first
     await page.getByRole('button', { name: 'Log today\'s entry' }).click();
     await page.waitForTimeout(500);
-    await page.getByText('Save').click();
+    await page.getByText('Save').first().click();
     await page.waitForTimeout(500);
     // Now open the saved entry
     await page.getByRole('button', { name: "Edit today's entry" }).click();
