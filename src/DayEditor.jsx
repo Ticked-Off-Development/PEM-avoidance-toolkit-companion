@@ -99,6 +99,11 @@ export default function DayEditor({ day, onSave, onCancel, onDelete }) {
           aria-label="Comments about the day"
           style={{ ...s.input, resize: 'vertical', fontFamily: 'var(--font)' }} />
 
+        <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 20 }}>
+          <BtnS onClick={onCancel}>Cancel</BtnS>
+          <BtnP onClick={() => onSave(form)}>Save</BtnP>
+        </div>
+
         {onDelete && (
           <div style={{ marginTop: 24, paddingTop: 16, borderTop: '1px solid var(--border)' }}>
             <button onClick={() => {
