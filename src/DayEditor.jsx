@@ -30,18 +30,8 @@ export default function DayEditor({ day, onSave, onCancel, onDelete }) {
     setMode(newMode);
     setForm(f => {
       const updated = { ...f, entryMode: newMode };
-      if (newMode === 'quick') {
-        // Keep overall fields, null out granular fields
-        updated.physical = null;
-        updated.mental = null;
-        updated.emotional = null;
-        updated.fatigue = null;
-        updated.pain = null;
-        updated.nausea_gi = null;
-        updated.brain_fog = null;
-        updated.other_symptom = null;
-      } else {
-        // Switching to full: restore empty granular fields if null
+      if (newMode === 'full') {
+        // Restore empty granular fields if null (e.g. opening a saved quick entry)
         if (updated.physical === null) updated.physical = '';
         if (updated.mental === null) updated.mental = '';
         if (updated.emotional === null) updated.emotional = '';
@@ -58,6 +48,16 @@ export default function DayEditor({ day, onSave, onCancel, onDelete }) {
 
   const handleSave = () => {
     const toSave = { ...form, entryMode: mode };
+    if (mode === 'quick') {
+      toSave.physical = null;
+      toSave.mental = null;
+      toSave.emotional = null;
+      toSave.fatigue = null;
+      toSave.pain = null;
+      toSave.nausea_gi = null;
+      toSave.brain_fog = null;
+      toSave.other_symptom = null;
+    }
     onSave(toSave);
   };
 

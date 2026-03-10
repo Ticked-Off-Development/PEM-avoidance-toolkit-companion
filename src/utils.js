@@ -71,26 +71,6 @@ export function emptyDay(date) {
   };
 }
 
-export function emptyQuickDay(date) {
-  return {
-    id: `day-${date}`,
-    date,
-    entryMode: 'quick',
-    overall_activity: '',
-    overall_symptom: { am: '', mid: '', pm: '' },
-    crash: null,
-    unrefreshing_sleep: null,
-    comments: '',
-    physical: null,
-    mental: null,
-    emotional: null,
-    fatigue: null,
-    pain: null,
-    nausea_gi: null,
-    brain_fog: null,
-    other_symptom: null,
-  };
-}
 
 export function generateCSV(days) {
   const headers = [
