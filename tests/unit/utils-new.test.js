@@ -210,7 +210,7 @@ describe('computeCorrelations', () => {
     // Physical has only 5 valid values, should still compute
   });
 
-  it('returns 0 for constant fields', () => {
+  it('returns null for constant fields', () => {
     const days = Array.from({ length: 10 }, (_, i) => makeDay(
       `2024-01-${String(i + 1).padStart(2, '0')}`,
       {
@@ -227,8 +227,8 @@ describe('computeCorrelations', () => {
     const { labels, matrix } = computeCorrelations(days);
     const physIdx = labels.indexOf('Physical');
     const mentIdx = labels.indexOf('Mental');
-    // Constant vs varying should be 0
-    expect(matrix[physIdx][mentIdx]).toBe(0);
+    // Constant vs varying: correlation is undefined (null), not 0
+    expect(matrix[physIdx][mentIdx]).toBeNull();
   });
 });
 

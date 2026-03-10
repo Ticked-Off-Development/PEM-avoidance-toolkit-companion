@@ -45,6 +45,7 @@ export default function App() {
   const [tourStep, setTourStep] = useState(null);
   const [reminderDismissed, setReminderDismissed] = useState(() => sessionStorage.getItem('reminderDismissed') === 'true');
   const exportModalRef = useRef(null);
+  const exportBtnRef = useRef(null);
 
   // Load from IndexedDB
   useEffect(() => {
@@ -57,6 +58,9 @@ export default function App() {
       } else {
         setData(defaultData());
       }
+      setLoading(false);
+    }).catch(() => {
+      setData(defaultData());
       setLoading(false);
     });
   }, []);
@@ -94,6 +98,7 @@ export default function App() {
   }, []);
 
   const toggleTheme = () => setTheme(t => t === 'dark' ? 'light' : 'dark');
+  const closeExport = () => { setExportOpen(false); exportBtnRef.current?.focus(); };
 
   // Apply theme class
   useEffect(() => {
@@ -137,6 +142,10 @@ export default function App() {
             // Validate appdata shape
             if (value.days && !Array.isArray(value.days)) continue;
             if (value.plan && typeof value.plan !== 'object') continue;
+            // Validate individual day objects have required fields
+            if (Array.isArray(value.days)) {
+              value.days = value.days.filter(d => d && typeof d === 'object' && typeof d.date === 'string' && typeof d.id === 'string');
+            }
           }
           sanitized[key] = value;
         }
@@ -246,7 +255,7 @@ export default function App() {
             <button onClick={toggleTheme} aria-label={theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'} style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 8, padding: '6px 10px', fontSize: 12, color: 'var(--tx-m)', cursor: 'pointer', fontFamily: 'var(--font)', minHeight: 32 }}>
               {theme === 'dark' ? '\u2600 Light' : '\uD83C\uDF19 Dark'}
             </button>
-            <button onClick={() => setExportOpen(true)} aria-label="Export data" style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 8, padding: '6px 10px', fontSize: 12, color: 'var(--tx-m)', cursor: 'pointer', fontFamily: 'var(--font)', minHeight: 32 }}>
+            <button ref={exportBtnRef} onClick={() => setExportOpen(true)} aria-label="Export data" style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 8, padding: '6px 10px', fontSize: 12, color: 'var(--tx-m)', cursor: 'pointer', fontFamily: 'var(--font)', minHeight: 32 }}>
               {'\uD83D\uDCE4'} Export
             </button>
           </div>
@@ -288,11 +297,11 @@ export default function App() {
       {exportOpen && (() => {
         const exportText = generateExportText(data.days, data.plan);
         return (
-        <div ref={exportModalRef} role="dialog" aria-label="Export data" style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', zIndex: 200, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }} onClick={() => setExportOpen(false)} onKeyDown={e => { if (e.key === 'Escape') setExportOpen(false); trapFocus(e, exportModalRef); }}>
+        <div ref={exportModalRef} role="dialog" aria-label="Export data" style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', zIndex: 200, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }} onClick={() => closeExport()} onKeyDown={e => { if (e.key === 'Escape') closeExport(); trapFocus(e, exportModalRef); }}>
           <div onClick={e => e.stopPropagation()} style={{ background: 'var(--surface)', borderRadius: 16, width: '100%', maxWidth: 480, maxHeight: '80dvh', overflowY: 'auto', padding: 24 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
               <span style={{ fontSize: 16, fontWeight: 700 }}>Export & Backup</span>
-              <button onClick={() => setExportOpen(false)} aria-label="Close export dialog" style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 8, padding: '6px 14px', fontSize: 13, color: 'var(--tx-m)', cursor: 'pointer', fontFamily: 'var(--font)' }}>Close</button>
+              <button onClick={() => closeExport()} aria-label="Close export dialog" style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 8, padding: '6px 14px', fontSize: 13, color: 'var(--tx-m)', cursor: 'pointer', fontFamily: 'var(--font)' }}>Close</button>
             </div>
             <div style={{ fontSize: 13, color: 'var(--tx-m)', marginBottom: 12 }}>
               Share this with your doctor or support team.
@@ -301,7 +310,7 @@ export default function App() {
               {exportText}
             </div>
             <button onClick={() => {
-              navigator.clipboard.writeText(exportText).then(() => alert('Copied to clipboard!'));
+              navigator.clipboard.writeText(exportText).then(() => alert('Copied to clipboard!')).catch(() => alert('Could not copy to clipboard.'));
             }} aria-label="Copy report to clipboard" style={{ width: '100%', marginTop: 12, background: 'var(--acc)', color: '#fff', border: 'none', borderRadius: 8, padding: '12px 20px', fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'var(--font)' }}>
               Copy to Clipboard
             </button>

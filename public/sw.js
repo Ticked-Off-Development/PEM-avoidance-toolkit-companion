@@ -30,7 +30,7 @@ self.addEventListener("fetch", function(e) {
           }
           return response;
         }).catch(function() {
-          return cached;
+          return cached || new Response('Offline', { status: 503, headers: { 'Content-Type': 'text/plain' } });
         });
         return cached || fetched;
       })

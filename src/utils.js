@@ -97,7 +97,7 @@ export function generateCSV(days) {
       d.brain_fog?.am, d.brain_fog?.mid, d.brain_fog?.pm,
       d.other_symptom?.name || '', d.other_symptom?.am, d.other_symptom?.mid, d.other_symptom?.pm,
       d.overall_symptom?.am, d.overall_symptom?.mid, d.overall_symptom?.pm,
-      d.crash ? 'Yes' : d.crash === false ? 'No' : '',
+      d.crash === true ? 'Yes' : d.crash === false ? 'No' : '',
       d.comments || '',
     ].map(esc).join(','));
   });
@@ -141,7 +141,7 @@ export function computeCorrelations(days) {
       dy += (y - my) ** 2;
     });
     const denom = Math.sqrt(dx * dy);
-    return denom === 0 ? 0 : num / denom;
+    return denom === 0 ? null : num / denom;
   }
 
   const vectors = fields.map(f => days.map(f.get));
