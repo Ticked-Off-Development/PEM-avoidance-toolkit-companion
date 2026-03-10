@@ -247,3 +247,91 @@ test.describe('Plan View - Accessibility', () => {
     expect(expanded).toBe('true');
   });
 });
+
+test.describe('Quick Log Mode', () => {
+  test('mode toggle is visible in day editor', async ({ page }) => {
+    await completeOnboarding(page);
+    await page.getByRole('button', { name: 'Log today\'s entry' }).click();
+    await page.waitForTimeout(500);
+    // Mode toggle should show Full Log and Quick Log options
+    await expect(page.getByRole('radio', { name: 'Full Log' })).toBeVisible({ timeout: 2000 });
+    await expect(page.getByRole('radio', { name: 'Quick Log' })).toBeVisible({ timeout: 2000 });
+  });
+
+  test('defaults to Full Log mode', async ({ page }) => {
+    await completeOnboarding(page);
+    await page.getByRole('button', { name: 'Log today\'s entry' }).click();
+    await page.waitForTimeout(500);
+    const fullBtn = page.getByRole('radio', { name: 'Full Log' });
+    await expect(fullBtn).toHaveAttribute('aria-checked', 'true');
+    // Full mode fields should be visible
+    await expect(page.getByText('Activity Levels (0-10)')).toBeVisible();
+  });
+
+  test('switching to Quick Log shows simplified form', async ({ page }) => {
+    await completeOnboarding(page);
+    await page.getByRole('button', { name: 'Log today\'s entry' }).click();
+    await page.waitForTimeout(500);
+    await page.getByRole('radio', { name: 'Quick Log' }).click();
+    await page.waitForTimeout(300);
+    // Quick mode fields should be visible
+    await expect(page.getByText('Overall Activity (0-10)')).toBeVisible();
+    await expect(page.getByText('Overall Symptoms (0-10)')).toBeVisible();
+    await expect(page.getByText('Crash?')).toBeVisible();
+    // Full mode fields should NOT be visible
+    await expect(page.getByText('Activity Levels (0-10)')).not.toBeVisible();
+    await expect(page.getByText('Symptoms (0-10, AM / Midday / PM)')).not.toBeVisible();
+  });
+
+  test('switching back to Full Log restores full form', async ({ page }) => {
+    await completeOnboarding(page);
+    await page.getByRole('button', { name: 'Log today\'s entry' }).click();
+    await page.waitForTimeout(500);
+    // Switch to quick
+    await page.getByRole('radio', { name: 'Quick Log' }).click();
+    await page.waitForTimeout(300);
+    // Switch back to full
+    await page.getByRole('radio', { name: 'Full Log' }).click();
+    await page.waitForTimeout(300);
+    // Full mode fields should be visible again
+    await expect(page.getByText('Activity Levels (0-10)')).toBeVisible();
+  });
+
+  test('quick log entry can be saved', async ({ page }) => {
+    await completeOnboarding(page);
+    await page.getByRole('button', { name: 'Log today\'s entry' }).click();
+    await page.waitForTimeout(500);
+    await page.getByRole('radio', { name: 'Quick Log' }).click();
+    await page.waitForTimeout(300);
+    // Set overall activity to 3
+    await page.getByRole('radio', { name: '3' }).first().click();
+    // Save
+    await page.getByText('Save').first().click();
+    await page.waitForTimeout(500);
+    // Entry should appear — verify editor closed and we're back on track view
+    await expect(page.getByRole('button', { name: "Edit today's entry" })).toBeVisible({ timeout: 3000 });
+  });
+});
+
+test.describe('Learn - PEM vs Similar Conditions', () => {
+  test('PEM vs Similar Conditions section is visible', async ({ page }) => {
+    await completeOnboarding(page);
+    await page.getByLabel('Learn').click();
+    await page.waitForTimeout(500);
+    await expect(page.getByText('PEM vs Similar Conditions')).toBeVisible({ timeout: 3000 });
+  });
+
+  test('clicking PEM vs section shows comparison content', async ({ page }) => {
+    await completeOnboarding(page);
+    await page.getByLabel('Learn').click();
+    await page.waitForTimeout(500);
+    await page.getByText('PEM vs Similar Conditions').click();
+    await page.waitForTimeout(300);
+    // Should show the comparison content
+    await expect(page.getByText('PEM (Post-Exertional Malaise)')).toBeVisible({ timeout: 2000 });
+    await expect(page.getByText('Dysautonomia (e.g. POTS)')).toBeVisible();
+    await expect(page.getByText('MCAS (Mast Cell Activation Syndrome)')).toBeVisible();
+    await expect(page.getByText('Fibromyalgia')).toBeVisible();
+    await expect(page.getByText('DOMS (Delayed Onset Muscle Soreness)')).toBeVisible();
+  });
+});

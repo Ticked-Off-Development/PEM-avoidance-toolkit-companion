@@ -3,12 +3,82 @@ import { Card } from './components.jsx';
 
 const SECTIONS = [
   { id: 'what', t: 'What is PEM?', c: 'Post-Exertional Malaise (PEM) is the worsening of symptoms after physical, cognitive, or emotional exertion. It is one of the defining criteria of ME/CFS diagnosis. Crashes can be delayed by hours or even days after the triggering activity, making it difficult to identify what caused them.' },
+  { id: 'pem-vs', t: 'PEM vs Similar Conditions', c: null, rich: true },
   { id: 'pacing', t: 'Pacing — The Key Strategy', c: 'Experts consider pacing to be the single most important strategy for reducing PEM crashes. The goal is to remain as active as your limited energy allows while taking proactive steps to avoid reaching your personal overexertion point. Set your constraints BEFORE you begin an activity. Use timers. Stop immediately when you sense warning signs. Don’t try to push through when you feel sick or tired.' },
   { id: 'tracking', t: 'Why Track?', c: 'Patients who track their activities and symptoms find it easier to determine what might be causing crashes and which strategies help reduce them. Rate physical, mental, and emotional activity levels (0-10) and key symptoms (fatigue, pain, nausea/GI, brain fog) at three times each day (AM, midday, PM). Track crashes and brief comments. Look for patterns over weeks — crashes can be delayed 3-5 days from the triggering activity.' },
   { id: 'support', t: 'Building a Support Team', c: 'Share your crash avoidance plan with the people in your life who can help. Your support team can assist with tracking, pattern recognition, meal preparation, errands, and emotional encouragement. Help them understand ME/CFS — it’s an invisible illness. Don’t depend on just one person; maintain the strength of your support community.' },
   { id: 'steps', t: 'The 4 Steps', c: '1) Find your causes and barriers — what triggers PEM and what stops you from avoiding it. 2) Pick your strategies — choose approaches to overcome your barriers. 3) Share with your support team — implement your plan to the best of your ability. 4) Track your progress — understand how activities and strategies correlate with symptoms.' },
   { id: 'tips', t: 'Key Tips', c: 'Schedule rest even if you don’t think you need it. Plan rest before AND after big activities. Reduce, simplify, and delegate. Eat regular, healthy meals and stay hydrated. Create a good sleep environment. Be kind to yourself — sometimes crashes happen involuntarily and it’s not your fault. Stressing out is mental exertion that can trigger PEM.' },
 ];
+
+function PemVsSection() {
+  const items = [
+    { name: 'PEM (Post-Exertional Malaise)', color: 'var(--acc)', bg: 'var(--acc-d)',
+      points: [
+        'Delayed onset: symptoms appear 12\u201372 hours after exertion',
+        'Disproportionate to the level of effort',
+        'Lasts days to weeks, not hours',
+        'Does NOT improve with repeated exposure or "pushing through"',
+        'Affects multiple systems: cognitive, physical, immune',
+      ] },
+    { name: 'Dysautonomia (e.g. POTS)', color: 'var(--pur)', bg: 'var(--pur-d)',
+      points: [
+        'Autonomic nervous system dysfunction',
+        'Symptoms are positional/cardiovascular and typically immediate (dizziness, rapid heart rate on standing)',
+        'Can coexist with ME/CFS but is a separate mechanism',
+        'Management focuses on hydration, salt, compression, and gradual position changes',
+      ] },
+    { name: 'MCAS (Mast Cell Activation Syndrome)', color: 'var(--org)', bg: 'var(--yel-d)',
+      points: [
+        'Immune/allergic reactions with identifiable triggers (foods, chemicals, temperature, stress)',
+        'Symptoms include flushing, hives, GI distress, and are often immediate',
+        'Can overlap with ME/CFS and worsen PEM',
+        'Managed by identifying and avoiding triggers, antihistamines, mast cell stabilisers',
+      ] },
+    { name: 'Fibromyalgia', color: 'var(--yel)', bg: 'var(--yel-d)',
+      points: [
+        'Chronic widespread pain with tender points',
+        'Exercise generally helps over time (graded exercise therapy can be appropriate)',
+        'Unlike PEM, symptoms typically do not dramatically worsen days after exertion',
+        'Can coexist with ME/CFS \u2014 distinguish which condition is driving symptoms',
+      ] },
+    { name: 'DOMS (Delayed Onset Muscle Soreness)', color: 'var(--grn)', bg: 'var(--grn-d)',
+      points: [
+        'Normal post-exercise soreness from muscle micro-tears',
+        'Peaks 24\u201372 hours post-exercise, then resolves',
+        'Improves with continued exercise (adaptation)',
+        'PEM is systemic (not just muscles), can last weeks, and worsens with repeated exertion',
+      ] },
+  ];
+  const tipStyle = { fontSize: 13, color: 'var(--tx-m)', lineHeight: 1.6, margin: 0, padding: 0, listStyle: 'none' };
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+      <p style={{ fontSize: 14, color: 'var(--tx-m)', lineHeight: 1.7, margin: 0 }}>
+        PEM is distinct from other conditions that may cause fatigue or pain after activity. Understanding the differences helps you and your support team respond correctly.
+      </p>
+      {items.map(item => (
+        <div key={item.name} style={{ background: item.bg, borderRadius: 10, padding: '12px 14px' }}>
+          <div style={{ fontSize: 13, fontWeight: 700, color: item.color, marginBottom: 6 }}>{item.name}</div>
+          <ul style={tipStyle}>
+            {item.points.map((p, i) => (
+              <li key={i} style={{ marginBottom: 4, paddingLeft: 12, position: 'relative' }}>
+                <span style={{ position: 'absolute', left: 0 }}>{'\u2022'}</span>{p}
+              </li>
+            ))}
+          </ul>
+        </div>
+      ))}
+      <p style={{ fontSize: 13, color: 'var(--acc)', lineHeight: 1.6, margin: '4px 0 0', fontWeight: 500 }}>
+        Use the crash logging and pre-crash lookback features in this app to help identify your PEM triggers.
+      </p>
+    </div>
+  );
+}
+
+function renderRichSection(id) {
+  if (id === 'pem-vs') return <PemVsSection />;
+  return null;
+}
 
 export default function LearnView() {
   const [open, setOpen] = useState(null);
@@ -40,7 +110,9 @@ export default function LearnView() {
                 background: 'var(--surface)', border: '1px solid var(--border)', borderTop: 'none',
                 borderRadius: '0 0 12px 12px', padding: '16px 18px',
               }}>
-                <p style={{ fontSize: 14, color: 'var(--tx-m)', lineHeight: 1.7, margin: 0 }}>{sec.c}</p>
+                {sec.rich ? renderRichSection(sec.id) : (
+                  <p style={{ fontSize: 14, color: 'var(--tx-m)', lineHeight: 1.7, margin: 0 }}>{sec.c}</p>
+                )}
               </div>
             )}
           </div>

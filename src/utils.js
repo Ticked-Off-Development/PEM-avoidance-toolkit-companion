@@ -67,6 +67,28 @@ export function emptyDay(date) {
     overall_symptom: { am: '', mid: '', pm: '' },
     crash: null,
     comments: '',
+    entryMode: 'full',
+  };
+}
+
+export function emptyQuickDay(date) {
+  return {
+    id: `day-${date}`,
+    date,
+    entryMode: 'quick',
+    overall_activity: '',
+    overall_symptom: { am: '', mid: '', pm: '' },
+    crash: null,
+    unrefreshing_sleep: null,
+    comments: '',
+    physical: null,
+    mental: null,
+    emotional: null,
+    fatigue: null,
+    pain: null,
+    nausea_gi: null,
+    brain_fog: null,
+    other_symptom: null,
   };
 }
 
@@ -78,7 +100,7 @@ export function generateCSV(days) {
     'Brain Fog AM', 'Brain Fog Mid', 'Brain Fog PM',
     'Other Symptom Name', 'Other Symptom AM', 'Other Symptom Mid', 'Other Symptom PM',
     'Overall Symptom AM', 'Overall Symptom Mid', 'Overall Symptom PM',
-    'Crash', 'Comments',
+    'Crash', 'Comments', 'Entry Mode',
   ];
   const esc = (v) => {
     let s = String(v == null ? '' : v);
@@ -99,6 +121,7 @@ export function generateCSV(days) {
       d.overall_symptom?.am, d.overall_symptom?.mid, d.overall_symptom?.pm,
       d.crash === true ? 'Yes' : d.crash === false ? 'No' : '',
       d.comments || '',
+      d.entryMode || 'full',
     ].map(esc).join(','));
   });
   return rows.join('\n');

@@ -5,6 +5,7 @@ import {
   computeCrashRisk,
   getLast30Dates,
   emptyDay,
+  emptyQuickDay,
 } from '../../src/utils.js';
 
 // --- Helper: create a day with specific values ---
@@ -33,11 +34,12 @@ describe('generateCSV', () => {
   it('includes all expected column headers', () => {
     const csv = generateCSV([]);
     const headers = csv.split('\n')[0].split(',');
-    expect(headers).toHaveLength(27);
+    expect(headers).toHaveLength(28);
     expect(headers[0]).toBe('Date');
     expect(headers[5]).toBe('Unrefreshing Sleep');
     expect(headers[25]).toBe('Crash');
     expect(headers[26]).toBe('Comments');
+    expect(headers[27]).toBe('Entry Mode');
   });
 
   it('generates one data row per day', () => {
@@ -363,5 +365,125 @@ describe('getLast30Dates', () => {
       const diff = (curr - prev) / (1000 * 60 * 60 * 24);
       expect(diff).toBe(1);
     }
+  });
+});
+
+// --- emptyDay / emptyQuickDay ---
+
+describe('emptyDay', () => {
+  it('includes entryMode set to full', () => {
+    const day = emptyDay('2024-01-15');
+    expect(day.entryMode).toBe('full');
+  });
+
+  it('has all granular fields as empty objects/strings', () => {
+    const day = emptyDay('2024-01-15');
+    expect(day.physical).toBe('');
+    expect(day.mental).toBe('');
+    expect(day.emotional).toBe('');
+    expect(day.fatigue).toEqual({ am: '', mid: '', pm: '' });
+    expect(day.pain).toEqual({ am: '', mid: '', pm: '' });
+    expect(day.brain_fog).toEqual({ am: '', mid: '', pm: '' });
+  });
+});
+
+describe('emptyQuickDay', () => {
+  it('returns entryMode set to quick', () => {
+    const day = emptyQuickDay('2024-01-15');
+    expect(day.entryMode).toBe('quick');
+  });
+
+  it('has null granular fields', () => {
+    const day = emptyQuickDay('2024-01-15');
+    expect(day.physical).toBeNull();
+    expect(day.mental).toBeNull();
+    expect(day.emotional).toBeNull();
+    expect(day.fatigue).toBeNull();
+    expect(day.pain).toBeNull();
+    expect(day.nausea_gi).toBeNull();
+    expect(day.brain_fog).toBeNull();
+    expect(day.other_symptom).toBeNull();
+  });
+
+  it('has core quick fields', () => {
+    const day = emptyQuickDay('2024-01-15');
+    expect(day.overall_activity).toBe('');
+    expect(day.overall_symptom).toEqual({ am: '', mid: '', pm: '' });
+    expect(day.crash).toBeNull();
+    expect(day.unrefreshing_sleep).toBeNull();
+    expect(day.comments).toBe('');
+  });
+
+  it('has correct id and date', () => {
+    const day = emptyQuickDay('2024-03-01');
+    expect(day.id).toBe('day-2024-03-01');
+    expect(day.date).toBe('2024-03-01');
+  });
+});
+
+// --- generateCSV with quick entries ---
+
+describe('generateCSV with quick entries', () => {
+  it('includes Entry Mode column with correct values', () => {
+    const days = [
+      makeDay('2024-01-15', { entryMode: 'full', overall_activity: '5' }),
+      { ...emptyQuickDay('2024-01-16'), overall_activity: '3', overall_symptom: { am: '4', mid: '4', pm: '4' } },
+    ];
+    const lines = generateCSV(days).split('\n');
+    expect(lines).toHaveLength(3);
+    // Entry Mode is the last column (index 27)
+    expect(lines[1].split(',')[27]).toBe('full');
+    expect(lines[2].split(',')[27]).toBe('quick');
+  });
+
+  it('handles null granular fields in quick entries', () => {
+    const days = [emptyQuickDay('2024-01-15')];
+    const csv = generateCSV(days);
+    // Should not throw
+    expect(csv.split('\n')).toHaveLength(2);
+  });
+});
+
+// --- computeCorrelations with quick entries ---
+
+describe('computeCorrelations with quick entries', () => {
+  it('handles entries with null granular fields', () => {
+    const days = [
+      ...Array.from({ length: 7 }, (_, i) => makeDay(
+        `2024-01-${String(i + 1).padStart(2, '0')}`,
+        { physical: String(i), mental: String(i), overall_activity: String(i),
+          fatigue: { am: String(i), mid: String(i), pm: String(i) },
+          pain: { am: String(i), mid: String(i), pm: String(i) },
+          brain_fog: { am: String(i), mid: String(i), pm: String(i) },
+          overall_symptom: { am: String(i), mid: String(i), pm: String(i) } }
+      )),
+      // Quick entries with null granular fields
+      { ...emptyQuickDay('2024-01-08'), overall_activity: '5', overall_symptom: { am: '3', mid: '3', pm: '3' } },
+      { ...emptyQuickDay('2024-01-09'), overall_activity: '6', overall_symptom: { am: '4', mid: '4', pm: '4' } },
+    ];
+    const result = computeCorrelations(days);
+    expect(result).toHaveProperty('labels');
+    expect(result).toHaveProperty('matrix');
+    // Should not throw — null fields are handled by avgField/numOrNull returning null
+  });
+});
+
+// --- computeCrashRisk with quick entries ---
+
+describe('computeCrashRisk with quick entries', () => {
+  it('includes quick entries that have overall_activity', () => {
+    const days = [
+      ...Array.from({ length: 7 }, (_, i) => makeDay(
+        `2024-01-${String(i + 1).padStart(2, '0')}`,
+        { overall_activity: '4' }
+      )),
+      { ...emptyQuickDay('2024-01-08'), overall_activity: '4' },
+      { ...emptyQuickDay('2024-01-09'), overall_activity: '4' },
+      { ...emptyQuickDay('2024-01-10'), overall_activity: '4' },
+    ];
+    const result = computeCrashRisk(days);
+    expect(result).not.toBeNull();
+    expect(result.atRisk).toBe(false);
+    expect(result.mean).toBe('4.0');
   });
 });

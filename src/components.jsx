@@ -44,12 +44,15 @@ export function CrashBadge() {
 
 export function DaySummary({ day, compact }) {
   const avg = (f) => { const v = avgField(f); return v !== null ? v.toFixed(1) : '—'; };
-  const metrics = [
-    { l: 'Activity', v: day.overall_activity != null && day.overall_activity !== '' ? day.overall_activity : '—', c: activityColor },
+  const isQuick = day.entryMode === 'quick';
+  const activity = { l: 'Activity', v: day.overall_activity != null && day.overall_activity !== '' ? day.overall_activity : '—', c: activityColor };
+  const symptom = { l: 'Symptom', v: avg(day.overall_symptom), c: symptomColor };
+  const metrics = isQuick ? [activity, symptom] : [
+    activity,
     { l: 'Fatigue', v: avg(day.fatigue), c: symptomColor },
     { l: 'Pain', v: avg(day.pain), c: symptomColor },
     { l: 'Brain Fog', v: avg(day.brain_fog), c: symptomColor },
-    { l: 'Symptom', v: avg(day.overall_symptom), c: symptomColor },
+    symptom,
   ];
 
   return (
@@ -60,6 +63,11 @@ export function DaySummary({ day, compact }) {
           <div style={{ fontSize: 9, color: 'var(--tx-d)', marginTop: 2 }}>{m.l}</div>
         </div>
       ))}
+      {isQuick && (
+        <div style={{ background: 'var(--acc-d)', borderRadius: 8, padding: compact ? '4px 8px' : '6px 10px', display: 'flex', alignItems: 'center' }}>
+          <span style={{ fontSize: 10, color: 'var(--acc)', fontWeight: 600 }}>Quick</span>
+        </div>
+      )}
       {day.unrefreshing_sleep === true && (
         <div style={{ background: 'var(--pur-d)', borderRadius: 8, padding: compact ? '4px 8px' : '6px 10px', display: 'flex', alignItems: 'center' }}>
           <span style={{ fontSize: 10, color: 'var(--pur)', fontWeight: 600 }}>Unrefreshing sleep</span>

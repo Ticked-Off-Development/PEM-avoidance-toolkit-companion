@@ -18,90 +18,208 @@ export default function DayEditor({ day, onSave, onCancel, onDelete }) {
     // Restore properties that JSON stringify removes (undefined → missing)
     if (!clone.other_symptom) clone.other_symptom = { name: '', am: '', mid: '', pm: '' };
     if (!clone.nausea_gi) clone.nausea_gi = { am: '', mid: '', pm: '' };
+    if (!clone.entryMode) clone.entryMode = 'full';
     return clone;
   });
+  const [mode, setMode] = useState(form.entryMode || 'full');
+  const [showComments, setShowComments] = useState(!!form.comments);
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
   const setN = (k, sub, v) => setForm(f => ({ ...f, [k]: { ...f[k], [sub]: v } }));
+
+  const switchMode = (newMode) => {
+    setMode(newMode);
+    setForm(f => {
+      const updated = { ...f, entryMode: newMode };
+      if (newMode === 'quick') {
+        // Keep overall fields, null out granular fields
+        updated.physical = null;
+        updated.mental = null;
+        updated.emotional = null;
+        updated.fatigue = null;
+        updated.pain = null;
+        updated.nausea_gi = null;
+        updated.brain_fog = null;
+        updated.other_symptom = null;
+      } else {
+        // Switching to full: restore empty granular fields if null
+        if (updated.physical === null) updated.physical = '';
+        if (updated.mental === null) updated.mental = '';
+        if (updated.emotional === null) updated.emotional = '';
+        if (!updated.fatigue) updated.fatigue = { am: '', mid: '', pm: '' };
+        if (!updated.pain) updated.pain = { am: '', mid: '', pm: '' };
+        if (!updated.nausea_gi) updated.nausea_gi = { am: '', mid: '', pm: '' };
+        if (!updated.brain_fog) updated.brain_fog = { am: '', mid: '', pm: '' };
+        if (!updated.other_symptom) updated.other_symptom = { name: '', am: '', mid: '', pm: '' };
+        if (!updated.overall_symptom) updated.overall_symptom = { am: '', mid: '', pm: '' };
+      }
+      return updated;
+    });
+  };
+
+  const handleSave = () => {
+    const toSave = { ...form, entryMode: mode };
+    onSave(toSave);
+  };
+
+  // Quick mode: set overall symptom as single value across all periods
+  const setQuickSymptom = (v) => {
+    setForm(f => ({ ...f, overall_symptom: { am: v, mid: v, pm: v } }));
+  };
+
+  const isQuick = mode === 'quick';
 
   return (
     <div ref={modalRef} role="dialog" aria-label="Edit day entry" style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', zIndex: 200, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }} onClick={onCancel} onKeyDown={e => { if (e.key === 'Escape') onCancel(); trapFocus(e, modalRef); }}>
       <div onClick={e => e.stopPropagation()} style={{ background: 'var(--surface)', borderRadius: '22px 22px 0 0', width: '100%', maxWidth: 520, maxHeight: '92dvh', overflowY: 'auto', padding: '22px 20px 36px', WebkitOverflowScrolling: 'touch' }}>
 
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
           <span style={{ fontSize: 16, fontWeight: 700 }}>{formatDate(form.date)}</span>
           <div style={{ display: 'flex', gap: 8 }}>
             <BtnS onClick={onCancel}>Cancel</BtnS>
-            <BtnP onClick={() => onSave(form)}>Save</BtnP>
+            <BtnP onClick={handleSave}>Save</BtnP>
           </div>
         </div>
 
-        <SectionLabel>Activity Levels (0-10)</SectionLabel>
-        <div style={{ fontSize: 11, color: 'var(--tx-d)', marginBottom: 10 }}>0 = very low/negligible &middot; 10 = activity when fully healthy</div>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-          <ScoreInput label="Physical" value={form.physical} onChange={v => set('physical', v)} colorFn={activityColor} />
-          <ScoreInput label="Mental" value={form.mental} onChange={v => set('mental', v)} colorFn={activityColor} />
-          <ScoreInput label="Emotional" value={form.emotional} onChange={v => set('emotional', v)} colorFn={activityColor} />
-          <ScoreInput label="Overall Activity &#9733;" value={form.overall_activity} onChange={v => set('overall_activity', v)} colorFn={activityColor} highlight />
-        </div>
-
-        <SectionLabel>Unrefreshing Sleep?</SectionLabel>
-        <div style={{ display: 'flex', gap: 8 }}>
-          {[{ v: true, l: 'Yes' }, { v: false, l: 'No' }].map(opt => (
-            <button key={String(opt.v)} onClick={() => set('unrefreshing_sleep', opt.v)} style={{
-              borderRadius: 8, padding: '10px 18px', fontSize: 14, fontWeight: 600, minHeight: 44, cursor: 'pointer',
+        {/* Mode Toggle */}
+        <div style={{ display: 'flex', gap: 6, marginBottom: 16 }} role="radiogroup" aria-label="Entry mode">
+          {[{ v: 'full', l: 'Full Log' }, { v: 'quick', l: 'Quick Log' }].map(opt => (
+            <button key={opt.v} role="radio" aria-checked={mode === opt.v} onClick={() => switchMode(opt.v)} style={{
+              flex: 1, borderRadius: 8, padding: '8px 12px', fontSize: 13, fontWeight: 600, minHeight: 40, cursor: 'pointer',
               border: '1px solid',
-              background: form.unrefreshing_sleep === opt.v ? (opt.v ? 'var(--red-d)' : 'var(--grn-d)') : 'var(--card)',
-              color: form.unrefreshing_sleep === opt.v ? (opt.v ? 'var(--red)' : 'var(--grn)') : 'var(--tx-m)',
-              borderColor: form.unrefreshing_sleep === opt.v ? (opt.v ? 'rgba(248,113,113,0.3)' : 'rgba(74,222,128,0.3)') : 'var(--border)',
+              background: mode === opt.v ? 'var(--acc-d)' : 'var(--card)',
+              color: mode === opt.v ? 'var(--acc)' : 'var(--tx-d)',
+              borderColor: mode === opt.v ? 'rgba(96,165,250,0.3)' : 'var(--border)',
               fontFamily: 'var(--font)',
             }}>{opt.l}</button>
           ))}
         </div>
 
-        <SectionLabel>Symptoms (0-10, AM / Midday / PM)</SectionLabel>
-        <div style={{ fontSize: 11, color: 'var(--tx-d)', marginBottom: 10 }}>0 = no symptom &middot; 10 = worst experienced</div>
-        <SymptomRow label="Fatigue" data={form.fatigue} onChange={(sub, v) => setN('fatigue', sub, v)} />
-        <SymptomRow label="Pain" data={form.pain} onChange={(sub, v) => setN('pain', sub, v)} />
-        <SymptomRow label="Nausea / GI" data={form.nausea_gi} onChange={(sub, v) => setN('nausea_gi', sub, v)} />
-        <SymptomRow label="Brain Fog" data={form.brain_fog} onChange={(sub, v) => setN('brain_fog', sub, v)} />
+        {isQuick ? (
+          <>
+            {/* Quick Mode */}
+            <SectionLabel>Overall Activity (0-10)</SectionLabel>
+            <div style={{ fontSize: 11, color: 'var(--tx-d)', marginBottom: 10 }}>0 = very low/negligible &middot; 10 = activity when fully healthy</div>
+            <ScoreInput label="Overall Activity" value={form.overall_activity} onChange={v => set('overall_activity', v)} colorFn={activityColor} highlight />
 
-        <div style={{ marginTop: 10 }}>
-          <div style={{ fontSize: 11, color: 'var(--tx-m)', marginBottom: 4 }}>Other symptom name:</div>
-          <input value={form.other_symptom.name} onChange={e => setN('other_symptom', 'name', e.target.value)}
-            placeholder="e.g. dizziness, anxiety&hellip;" style={{ ...s.input, fontSize: 13 }} />
-        </div>
-        {form.other_symptom.name && (
-          <SymptomRow label={form.other_symptom.name} data={form.other_symptom} onChange={(sub, v) => setN('other_symptom', sub, v)} />
+            <SectionLabel>Overall Symptoms (0-10)</SectionLabel>
+            <div style={{ fontSize: 11, color: 'var(--tx-d)', marginBottom: 10 }}>0 = no symptoms &middot; 10 = worst experienced</div>
+            <ScoreInput label="Overall Symptom" value={form.overall_symptom?.am || ''} onChange={v => setQuickSymptom(v)} colorFn={symptomColor} highlight />
+
+            <SectionLabel>Crash?</SectionLabel>
+            <div style={{ fontSize: 11, color: 'var(--tx-d)', marginBottom: 8 }}>A significant set-back in daily function</div>
+            <div style={{ display: 'flex', gap: 8 }}>
+              {[{ v: true, l: 'Yes \u2014 Crash' }, { v: false, l: 'No' }].map(opt => (
+                <button key={String(opt.v)} onClick={() => set('crash', opt.v)} style={{
+                  borderRadius: 8, padding: '10px 18px', fontSize: 14, fontWeight: 600, minHeight: 44, cursor: 'pointer',
+                  border: '1px solid', fontFamily: 'var(--font)',
+                  background: form.crash === opt.v ? (opt.v ? 'var(--red-d)' : 'var(--grn-d)') : 'var(--card)',
+                  color: form.crash === opt.v ? (opt.v ? 'var(--red)' : 'var(--grn)') : 'var(--tx-m)',
+                  borderColor: form.crash === opt.v ? (opt.v ? 'rgba(248,113,113,0.3)' : 'rgba(74,222,128,0.3)') : 'var(--border)',
+                }}>{opt.l}</button>
+              ))}
+            </div>
+
+            <SectionLabel>Unrefreshing Sleep?</SectionLabel>
+            <div style={{ display: 'flex', gap: 8 }}>
+              {[{ v: true, l: 'Yes' }, { v: false, l: 'No' }].map(opt => (
+                <button key={String(opt.v)} onClick={() => set('unrefreshing_sleep', opt.v)} style={{
+                  borderRadius: 8, padding: '10px 18px', fontSize: 14, fontWeight: 600, minHeight: 44, cursor: 'pointer',
+                  border: '1px solid', fontFamily: 'var(--font)',
+                  background: form.unrefreshing_sleep === opt.v ? (opt.v ? 'var(--red-d)' : 'var(--grn-d)') : 'var(--card)',
+                  color: form.unrefreshing_sleep === opt.v ? (opt.v ? 'var(--red)' : 'var(--grn)') : 'var(--tx-m)',
+                  borderColor: form.unrefreshing_sleep === opt.v ? (opt.v ? 'rgba(248,113,113,0.3)' : 'rgba(74,222,128,0.3)') : 'var(--border)',
+                }}>{opt.l}</button>
+              ))}
+            </div>
+
+            {/* Collapsible comments */}
+            {showComments ? (
+              <>
+                <SectionLabel>Comments</SectionLabel>
+                <textarea value={form.comments} maxLength={500} onChange={e => set('comments', e.target.value)}
+                  rows={2} placeholder="A few words about the day&hellip;"
+                  aria-label="Comments about the day"
+                  style={{ ...s.input, resize: 'vertical', fontFamily: 'var(--font)' }} />
+              </>
+            ) : (
+              <button onClick={() => setShowComments(true)} style={{
+                marginTop: 16, background: 'none', border: 'none', color: 'var(--acc)', fontSize: 13,
+                cursor: 'pointer', fontFamily: 'var(--font)', padding: 0,
+              }}>+ Add comment</button>
+            )}
+          </>
+        ) : (
+          <>
+            {/* Full Mode (existing form) */}
+            <SectionLabel>Activity Levels (0-10)</SectionLabel>
+            <div style={{ fontSize: 11, color: 'var(--tx-d)', marginBottom: 10 }}>0 = very low/negligible &middot; 10 = activity when fully healthy</div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+              <ScoreInput label="Physical" value={form.physical} onChange={v => set('physical', v)} colorFn={activityColor} />
+              <ScoreInput label="Mental" value={form.mental} onChange={v => set('mental', v)} colorFn={activityColor} />
+              <ScoreInput label="Emotional" value={form.emotional} onChange={v => set('emotional', v)} colorFn={activityColor} />
+              <ScoreInput label="Overall Activity &#9733;" value={form.overall_activity} onChange={v => set('overall_activity', v)} colorFn={activityColor} highlight />
+            </div>
+
+            <SectionLabel>Unrefreshing Sleep?</SectionLabel>
+            <div style={{ display: 'flex', gap: 8 }}>
+              {[{ v: true, l: 'Yes' }, { v: false, l: 'No' }].map(opt => (
+                <button key={String(opt.v)} onClick={() => set('unrefreshing_sleep', opt.v)} style={{
+                  borderRadius: 8, padding: '10px 18px', fontSize: 14, fontWeight: 600, minHeight: 44, cursor: 'pointer',
+                  border: '1px solid',
+                  background: form.unrefreshing_sleep === opt.v ? (opt.v ? 'var(--red-d)' : 'var(--grn-d)') : 'var(--card)',
+                  color: form.unrefreshing_sleep === opt.v ? (opt.v ? 'var(--red)' : 'var(--grn)') : 'var(--tx-m)',
+                  borderColor: form.unrefreshing_sleep === opt.v ? (opt.v ? 'rgba(248,113,113,0.3)' : 'rgba(74,222,128,0.3)') : 'var(--border)',
+                  fontFamily: 'var(--font)',
+                }}>{opt.l}</button>
+              ))}
+            </div>
+
+            <SectionLabel>Symptoms (0-10, AM / Midday / PM)</SectionLabel>
+            <div style={{ fontSize: 11, color: 'var(--tx-d)', marginBottom: 10 }}>0 = no symptom &middot; 10 = worst experienced</div>
+            <SymptomRow label="Fatigue" data={form.fatigue} onChange={(sub, v) => setN('fatigue', sub, v)} />
+            <SymptomRow label="Pain" data={form.pain} onChange={(sub, v) => setN('pain', sub, v)} />
+            <SymptomRow label="Nausea / GI" data={form.nausea_gi} onChange={(sub, v) => setN('nausea_gi', sub, v)} />
+            <SymptomRow label="Brain Fog" data={form.brain_fog} onChange={(sub, v) => setN('brain_fog', sub, v)} />
+
+            <div style={{ marginTop: 10 }}>
+              <div style={{ fontSize: 11, color: 'var(--tx-m)', marginBottom: 4 }}>Other symptom name:</div>
+              <input value={form.other_symptom.name} onChange={e => setN('other_symptom', 'name', e.target.value)}
+                placeholder="e.g. dizziness, anxiety&hellip;" style={{ ...s.input, fontSize: 13 }} />
+            </div>
+            {form.other_symptom.name && (
+              <SymptomRow label={form.other_symptom.name} data={form.other_symptom} onChange={(sub, v) => setN('other_symptom', sub, v)} />
+            )}
+
+            <div style={{ marginTop: 6, padding: '8px 10px', background: 'var(--acc-d)', borderRadius: 8, border: '1px solid rgba(96,165,250,0.2)' }}>
+              <SymptomRow label="Overall Symptom &#9733;" data={form.overall_symptom} onChange={(sub, v) => setN('overall_symptom', sub, v)} highlight />
+            </div>
+
+            <SectionLabel>Crash?</SectionLabel>
+            <div style={{ fontSize: 11, color: 'var(--tx-d)', marginBottom: 8 }}>A significant set-back in daily function</div>
+            <div style={{ display: 'flex', gap: 8 }}>
+              {[{ v: true, l: 'Yes \u2014 Crash' }, { v: false, l: 'No' }].map(opt => (
+                <button key={String(opt.v)} onClick={() => set('crash', opt.v)} style={{
+                  borderRadius: 8, padding: '10px 18px', fontSize: 14, fontWeight: 600, minHeight: 44, cursor: 'pointer',
+                  border: '1px solid', fontFamily: 'var(--font)',
+                  background: form.crash === opt.v ? (opt.v ? 'var(--red-d)' : 'var(--grn-d)') : 'var(--card)',
+                  color: form.crash === opt.v ? (opt.v ? 'var(--red)' : 'var(--grn)') : 'var(--tx-m)',
+                  borderColor: form.crash === opt.v ? (opt.v ? 'rgba(248,113,113,0.3)' : 'rgba(74,222,128,0.3)') : 'var(--border)',
+                }}>{opt.l}</button>
+              ))}
+            </div>
+
+            <SectionLabel>Comments</SectionLabel>
+            <div style={{ fontSize: 11, color: 'var(--tx-d)', marginBottom: 6 }}>Brief reminder, e.g. &quot;Shopping for 3 hours&quot;</div>
+            <textarea value={form.comments} maxLength={500} onChange={e => set('comments', e.target.value)}
+              rows={3} placeholder="A few words about the day&hellip;"
+              aria-label="Comments about the day"
+              style={{ ...s.input, resize: 'vertical', fontFamily: 'var(--font)' }} />
+          </>
         )}
-
-        <div style={{ marginTop: 6, padding: '8px 10px', background: 'var(--acc-d)', borderRadius: 8, border: '1px solid rgba(96,165,250,0.2)' }}>
-          <SymptomRow label="Overall Symptom &#9733;" data={form.overall_symptom} onChange={(sub, v) => setN('overall_symptom', sub, v)} highlight />
-        </div>
-
-        <SectionLabel>Crash?</SectionLabel>
-        <div style={{ fontSize: 11, color: 'var(--tx-d)', marginBottom: 8 }}>A significant set-back in daily function</div>
-        <div style={{ display: 'flex', gap: 8 }}>
-          {[{ v: true, l: 'Yes — Crash' }, { v: false, l: 'No' }].map(opt => (
-            <button key={String(opt.v)} onClick={() => set('crash', opt.v)} style={{
-              borderRadius: 8, padding: '10px 18px', fontSize: 14, fontWeight: 600, minHeight: 44, cursor: 'pointer',
-              border: '1px solid', fontFamily: 'var(--font)',
-              background: form.crash === opt.v ? (opt.v ? 'var(--red-d)' : 'var(--grn-d)') : 'var(--card)',
-              color: form.crash === opt.v ? (opt.v ? 'var(--red)' : 'var(--grn)') : 'var(--tx-m)',
-              borderColor: form.crash === opt.v ? (opt.v ? 'rgba(248,113,113,0.3)' : 'rgba(74,222,128,0.3)') : 'var(--border)',
-            }}>{opt.l}</button>
-          ))}
-        </div>
-
-        <SectionLabel>Comments</SectionLabel>
-        <div style={{ fontSize: 11, color: 'var(--tx-d)', marginBottom: 6 }}>Brief reminder, e.g. &quot;Shopping for 3 hours&quot;</div>
-        <textarea value={form.comments} maxLength={500} onChange={e => set('comments', e.target.value)}
-          rows={3} placeholder="A few words about the day&hellip;"
-          aria-label="Comments about the day"
-          style={{ ...s.input, resize: 'vertical', fontFamily: 'var(--font)' }} />
 
         <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 20 }}>
           <BtnS onClick={onCancel}>Cancel</BtnS>
-          <BtnP onClick={() => onSave(form)}>Save</BtnP>
+          <BtnP onClick={handleSave}>Save</BtnP>
         </div>
 
         {onDelete && (
