@@ -27,7 +27,7 @@ A progressive web app for tracking post-exertional malaise, based on the [Open M
 - **Print-friendly report** — clean browser print layout for doctor visits
 
 ### Usability
-- **Quick Log mode** — simplified one-screen entry for low-energy days (mood, energy, crash flag, and a note)
+- **Quick Log mode** — simplified one-screen entry for low-energy days (overall activity, overall symptoms, crash flag, and a note)
 - **Onboarding tour** — 4-step guided walkthrough for new users
 - **Dark/Light theme** toggle
 - **Works offline** after first load via service worker
