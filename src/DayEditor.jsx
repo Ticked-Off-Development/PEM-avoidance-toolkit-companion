@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react';
-import { formatDate, activityColor, symptomColor, calcOverallActivity, calcOverallSymptom } from './utils.js';
+import { formatDate, activityColor, calcOverallActivity, calcOverallSymptom } from './utils.js';
 import { SectionLabel, ScoreInput, SymptomRow, AutoScoreInput, AutoSymptomRow, BtnP, BtnS, s } from './components.jsx';
 
 function trapFocus(e, containerRef) {
