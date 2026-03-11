@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react';
-import { formatDate, activityColor, symptomColor } from './utils.js';
-import { SectionLabel, ScoreInput, SymptomRow, BtnP, BtnS, s } from './components.jsx';
+import { formatDate, activityColor, symptomColor, calcOverallActivity, calcOverallSymptom } from './utils.js';
+import { SectionLabel, ScoreInput, SymptomRow, AutoScoreInput, AutoSymptomRow, BtnP, BtnS, s } from './components.jsx';
 
 function trapFocus(e, containerRef) {
   if (e.key !== 'Tab' || !containerRef.current) return;
@@ -18,10 +18,40 @@ export default function DayEditor({ day, onSave, onCancel, onDelete }) {
     // Restore properties that JSON stringify removes (undefined → missing)
     if (!clone.other_symptom) clone.other_symptom = { name: '', am: '', mid: '', pm: '' };
     if (!clone.nausea_gi) clone.nausea_gi = { am: '', mid: '', pm: '' };
+    // Backward compat: existing days without override fields
+    if (clone.overrideActivity === undefined) {
+      clone.overrideActivity = clone.overall_activity !== '' && clone.overall_activity != null;
+    }
+    if (clone.overrideSymptom === undefined) {
+      const os = clone.overall_symptom || { am: '', mid: '', pm: '' };
+      clone.overrideSymptom = os.am !== '' || os.mid !== '' || os.pm !== '';
+    }
     return clone;
   });
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
   const setN = (k, sub, v) => setForm(f => ({ ...f, [k]: { ...f[k], [sub]: v } }));
+
+  const computedActivity = calcOverallActivity(form);
+  const computedSymptomAm = calcOverallSymptom(form, 'am');
+  const computedSymptomMid = calcOverallSymptom(form, 'mid');
+  const computedSymptomPm = calcOverallSymptom(form, 'pm');
+
+  const round1 = v => v !== null ? String(Math.round(v * 10) / 10) : '';
+
+  const handleSave = () => {
+    const out = { ...form };
+    if (!out.overrideActivity && computedActivity !== null) {
+      out.overall_activity = round1(computedActivity);
+    }
+    if (!out.overrideSymptom) {
+      out.overall_symptom = {
+        am: round1(computedSymptomAm),
+        mid: round1(computedSymptomMid),
+        pm: round1(computedSymptomPm),
+      };
+    }
+    onSave(out);
+  };
 
   return (
     <div ref={modalRef} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', zIndex: 200, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }} onClick={onCancel} onKeyDown={e => { if (e.key === 'Escape') onCancel(); trapFocus(e, modalRef); }}>
@@ -31,7 +61,7 @@ export default function DayEditor({ day, onSave, onCancel, onDelete }) {
           <span style={{ fontSize: 16, fontWeight: 700 }}>{formatDate(form.date)}</span>
           <div style={{ display: 'flex', gap: 8 }}>
             <BtnS onClick={onCancel}>Cancel</BtnS>
-            <BtnP onClick={() => onSave(form)}>Save</BtnP>
+            <BtnP onClick={handleSave}>Save</BtnP>
           </div>
         </div>
 
@@ -41,7 +71,10 @@ export default function DayEditor({ day, onSave, onCancel, onDelete }) {
           <ScoreInput label="Physical" value={form.physical} onChange={v => set('physical', v)} colorFn={activityColor} />
           <ScoreInput label="Mental" value={form.mental} onChange={v => set('mental', v)} colorFn={activityColor} />
           <ScoreInput label="Emotional" value={form.emotional} onChange={v => set('emotional', v)} colorFn={activityColor} />
-          <ScoreInput label="Overall Activity &#9733;" value={form.overall_activity} onChange={v => set('overall_activity', v)} colorFn={activityColor} highlight />
+          <AutoScoreInput label="Overall Activity &#9733;" computedValue={computedActivity} value={form.overall_activity} isOverride={form.overrideActivity}
+            onOverride={v => setForm(f => ({ ...f, overrideActivity: true, overall_activity: v }))}
+            onReset={() => setForm(f => ({ ...f, overrideActivity: false, overall_activity: '' }))}
+            colorFn={activityColor} />
         </div>
 
         <SectionLabel>Unrefreshing Sleep?</SectionLabel>
@@ -75,7 +108,10 @@ export default function DayEditor({ day, onSave, onCancel, onDelete }) {
         )}
 
         <div style={{ marginTop: 6, padding: '8px 10px', background: 'var(--acc-d)', borderRadius: 8, border: '1px solid rgba(96,165,250,0.2)' }}>
-          <SymptomRow label="Overall Symptom &#9733;" data={form.overall_symptom} onChange={(sub, v) => setN('overall_symptom', sub, v)} highlight />
+          <AutoSymptomRow label="Overall Symptom &#9733;" computedData={{ am: computedSymptomAm, mid: computedSymptomMid, pm: computedSymptomPm }}
+            data={form.overall_symptom} isOverride={form.overrideSymptom}
+            onOverride={(sub, v) => setForm(f => ({ ...f, overrideSymptom: true, overall_symptom: { ...f.overall_symptom, [sub]: v } }))}
+            onReset={() => setForm(f => ({ ...f, overrideSymptom: false, overall_symptom: { am: '', mid: '', pm: '' } }))} />
         </div>
 
         <SectionLabel>Crash?</SectionLabel>
@@ -101,7 +137,7 @@ export default function DayEditor({ day, onSave, onCancel, onDelete }) {
 
         <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 20 }}>
           <BtnS onClick={onCancel}>Cancel</BtnS>
-          <BtnP onClick={() => onSave(form)}>Save</BtnP>
+          <BtnP onClick={handleSave}>Save</BtnP>
         </div>
 
         {onDelete && (

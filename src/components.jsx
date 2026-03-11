@@ -118,6 +118,132 @@ export function SymptomRow({ label, data, onChange, highlight }) {
   );
 }
 
+function formatCalc(v) {
+  return v !== null ? (Math.round(v * 10) / 10).toFixed(1) : null;
+}
+
+function ResetLink({ onClick }) {
+  return (
+    <button onClick={e => { e.stopPropagation(); onClick(); }} aria-label="Reset to calculated average" style={{
+      background: 'none', border: 'none', padding: 0, fontSize: 10, color: 'var(--acc)',
+      cursor: 'pointer', fontFamily: 'var(--font)', textDecoration: 'underline',
+    }}>reset</button>
+  );
+}
+
+export function AutoScoreInput({ label, computedValue, value, isOverride, onOverride, onReset, colorFn }) {
+  const display = formatCalc(computedValue);
+
+  if (isOverride) {
+    return (
+      <div role="group" aria-label={`${label} score`} style={{ background: 'var(--acc-d)', borderRadius: 8, padding: '8px 10px', border: '1px solid rgba(96,165,250,0.2)' }}>
+        <div style={{ fontSize: 11, color: 'var(--acc)', marginBottom: 6, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6 }}>
+          {label} <span style={{ color: 'var(--org)' }}>*</span> <ResetLink onClick={onReset} />
+        </div>
+        <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }} role="radiogroup" aria-label={`${label} score selector`}>
+          {[...Array(11)].map((_, i) => {
+            const sel = String(i) === String(value);
+            return (
+              <button key={i} onClick={() => onOverride(String(i))} role="radio" aria-checked={sel} aria-label={`${i}`} style={{
+                width: 30, height: 36, borderRadius: 6, border: 'none', cursor: 'pointer',
+                fontSize: 13, fontWeight: 600, fontFamily: 'var(--mono)',
+                background: sel ? colorFn(i) : 'var(--card)',
+                color: sel ? '#000' : 'var(--tx-d)',
+                minHeight: 36, transition: 'all 0.15s',
+              }}>{i}</button>
+            );
+          })}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div role="group" aria-label={`${label} score (auto-calculated)`} onClick={() => { if (display !== null) onOverride(String(Math.round(computedValue))); }}
+      style={{ background: 'var(--acc-d)', borderRadius: 8, padding: '8px 10px', border: '1px solid rgba(96,165,250,0.2)', cursor: display !== null ? 'pointer' : 'default' }}>
+      <div style={{ fontSize: 11, color: 'var(--acc)', marginBottom: 6, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 4 }}>
+        {label} <span style={{ fontSize: 9, color: 'var(--tx-d)', fontWeight: 400 }}>avg</span>
+      </div>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 36, borderRadius: 6, background: 'rgba(96,165,250,0.08)' }}>
+        <span style={{ fontSize: 20, fontWeight: 700, fontFamily: 'var(--mono)', color: display !== null ? colorFn(display) : 'var(--tx-d)' }}>
+          {display !== null ? display : '\u2014'}
+        </span>
+      </div>
+      {display !== null && <div style={{ fontSize: 9, color: 'var(--tx-d)', marginTop: 4, textAlign: 'center' }}>tap to override</div>}
+    </div>
+  );
+}
+
+export function AutoSymptomRow({ label, computedData, data, isOverride, onOverride, onReset }) {
+  if (isOverride) {
+    return (
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 0', borderBottom: '1px solid rgba(42,51,64,0.3)' }} role="group" aria-label={`${label} symptom scores`}>
+        <div style={{ width: 85, fontSize: 13, color: 'var(--acc)', fontWeight: 600, flexShrink: 0, display: 'flex', alignItems: 'center', gap: 4 }}>
+          {label} <span style={{ color: 'var(--org)' }}>*</span>
+          <ResetLink onClick={onReset} />
+        </div>
+        <div style={{ display: 'flex', gap: 8, flex: 1 }}>
+          {['am', 'mid', 'pm'].map((p, idx) => (
+            <div key={p} style={{ flex: 1, textAlign: 'center' }}>
+              <div style={{ fontSize: 10, color: 'var(--tx-d)', marginBottom: 4 }}>{['AM', 'Mid', 'PM'][idx]}</div>
+              <input
+                type="number" min="0" max="10" placeholder="\u2014"
+                value={data[p]}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  if (val === '') { onOverride(p, val); return; }
+                  const n = Number(val);
+                  if (!isNaN(n) && n >= 0 && n <= 10) onOverride(p, val);
+                }}
+                aria-label={`${label} ${['AM', 'Midday', 'PM'][idx]} score`}
+                style={{ ...s.input, textAlign: 'center', padding: '8px 4px', fontSize: 14, fontWeight: 600, color: symptomColor(data[p]), minHeight: 40 }}
+              />
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  const hasAnyComputed = computedData.am !== null || computedData.mid !== null || computedData.pm !== null;
+
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 0', borderBottom: '1px solid rgba(42,51,64,0.3)', cursor: hasAnyComputed ? 'pointer' : 'default' }}
+      role="group" aria-label={`${label} symptom scores (auto-calculated)`}
+      onClick={() => {
+        if (hasAnyComputed) {
+          const initAm = formatCalc(computedData.am) || '';
+          const initMid = formatCalc(computedData.mid) || '';
+          const initPm = formatCalc(computedData.pm) || '';
+          onOverride('am', initAm);
+          onOverride('mid', initMid);
+          onOverride('pm', initPm);
+        }
+      }}>
+      <div style={{ width: 85, fontSize: 13, color: 'var(--acc)', fontWeight: 600, flexShrink: 0, display: 'flex', alignItems: 'center', gap: 4 }}>
+        {label} <span style={{ fontSize: 9, color: 'var(--tx-d)', fontWeight: 400 }}>avg</span>
+      </div>
+      <div style={{ display: 'flex', gap: 8, flex: 1 }}>
+        {['am', 'mid', 'pm'].map((p, idx) => {
+          const display = formatCalc(computedData[p]);
+          return (
+            <div key={p} style={{ flex: 1, textAlign: 'center' }}>
+              <div style={{ fontSize: 10, color: 'var(--tx-d)', marginBottom: 4 }}>{['AM', 'Mid', 'PM'][idx]}</div>
+              <div style={{
+                ...s.input, textAlign: 'center', padding: '8px 4px', fontSize: 14, fontWeight: 600, minHeight: 40,
+                color: display !== null ? symptomColor(display) : 'var(--tx-d)',
+                background: 'rgba(96,165,250,0.08)', borderStyle: 'dashed',
+              }}>
+                {display !== null ? display : '\u2014'}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 export function Sparkline({ data, color, height = 48 }) {
   if (!data || data.length < 2) return null;
   const clean = data.filter(v => !isNaN(v));
