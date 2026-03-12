@@ -96,6 +96,7 @@ export function emptyDay(date) {
 export function generateCSV(days) {
   const headers = [
     'Date', 'Entry Mode', 'Physical', 'Mental', 'Emotional', 'Overall Activity',
+    'Activity Override', 'Symptom Override',
     'Unrefreshing Sleep', 'Fatigue AM', 'Fatigue Mid', 'Fatigue PM',
     'Pain AM', 'Pain Mid', 'Pain PM', 'Nausea/GI AM', 'Nausea/GI Mid', 'Nausea/GI PM',
     'Brain Fog AM', 'Brain Fog Mid', 'Brain Fog PM',
@@ -113,6 +114,7 @@ export function generateCSV(days) {
   days.forEach(d => {
     rows.push([
       d.date, d.entryMode || 'full', d.physical, d.mental, d.emotional, d.overall_activity,
+      d.overrideActivity ? 'Yes' : 'No', d.overrideSymptom ? 'Yes' : 'No',
       d.unrefreshing_sleep === true ? 'Yes' : d.unrefreshing_sleep === false ? 'No' : '',
       d.fatigue?.am, d.fatigue?.mid, d.fatigue?.pm,
       d.pain?.am, d.pain?.mid, d.pain?.pm,

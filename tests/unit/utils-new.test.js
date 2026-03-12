@@ -36,12 +36,14 @@ describe('generateCSV', () => {
   it('includes all expected column headers', () => {
     const csv = generateCSV([]);
     const headers = csv.split('\n')[0].split(',');
-    expect(headers).toHaveLength(28);
+    expect(headers).toHaveLength(30);
     expect(headers[0]).toBe('Date');
     expect(headers[1]).toBe('Entry Mode');
-    expect(headers[6]).toBe('Unrefreshing Sleep');
-    expect(headers[26]).toBe('Crash');
-    expect(headers[27]).toBe('Comments');
+    expect(headers[6]).toBe('Activity Override');
+    expect(headers[7]).toBe('Symptom Override');
+    expect(headers[8]).toBe('Unrefreshing Sleep');
+    expect(headers[28]).toBe('Crash');
+    expect(headers[29]).toBe('Comments');
   });
 
   it('generates one data row per day', () => {
@@ -60,10 +62,10 @@ describe('generateCSV', () => {
       makeDay('2024-01-17', { unrefreshing_sleep: null }),
     ];
     const lines = generateCSV(days).split('\n');
-    // sleep is column index 6 (Date, Entry Mode, Physical, Mental, Emotional, Overall Activity, Unrefreshing Sleep)
-    expect(lines[1].split(',')[6]).toBe('Yes');
-    expect(lines[2].split(',')[6]).toBe('No');
-    expect(lines[3].split(',')[6]).toBe('');
+    // sleep is column index 8 (Date, Entry Mode, Physical, Mental, Emotional, Overall Activity, Activity Override, Symptom Override, Unrefreshing Sleep)
+    expect(lines[1].split(',')[8]).toBe('Yes');
+    expect(lines[2].split(',')[8]).toBe('No');
+    expect(lines[3].split(',')[8]).toBe('');
   });
 
   it('maps crash field correctly', () => {
@@ -73,10 +75,10 @@ describe('generateCSV', () => {
       makeDay('2024-01-17', { crash: null }),
     ];
     const lines = generateCSV(days).split('\n');
-    // crash is column index 26 (shifted +1 for Entry Mode column)
-    expect(lines[1].split(',')[26]).toBe('Yes');
-    expect(lines[2].split(',')[26]).toBe('No');
-    expect(lines[3].split(',')[26]).toBe('');
+    // crash is column index 28 (shifted +2 for Activity Override, Symptom Override columns)
+    expect(lines[1].split(',')[28]).toBe('Yes');
+    expect(lines[2].split(',')[28]).toBe('No');
+    expect(lines[3].split(',')[28]).toBe('');
   });
 
   it('includes symptom AM/Mid/PM values', () => {
@@ -415,7 +417,9 @@ describe('Quick Log - generateCSV with entryMode', () => {
     const csv = generateCSV([]);
     const headers = csv.split('\n')[0].split(',');
     expect(headers).toContain('Entry Mode');
-    expect(headers).toHaveLength(28);
+    expect(headers).toContain('Activity Override');
+    expect(headers).toContain('Symptom Override');
+    expect(headers).toHaveLength(30);
   });
 
   it('Quick Log rows have "quick" in Entry Mode column', () => {
