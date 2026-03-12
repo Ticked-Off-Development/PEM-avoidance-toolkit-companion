@@ -179,8 +179,8 @@ export function AutoSymptomRow({ label, computedData, data, isOverride, onOverri
     return (
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 0', borderBottom: '1px solid rgba(42,51,64,0.3)' }} role="group" aria-label={`${label} symptom scores`}>
         <div style={{ width: 85, fontSize: 13, color: 'var(--acc)', fontWeight: 600, flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 2 }}>
-          <span>{label} <span style={{ color: 'var(--org)' }}>*</span></span>
-          <ResetLink onClick={onReset} />
+          <span>{label}</span>
+          <span><span style={{ color: 'var(--org)' }}>*</span> <ResetLink onClick={onReset} /></span>
         </div>
         <div style={{ display: 'flex', gap: 8, flex: 1 }}>
           {['am', 'mid', 'pm'].map((p, idx) => {
