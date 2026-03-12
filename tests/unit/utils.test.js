@@ -8,13 +8,16 @@ import {
   avgField,
   emptyDay,
   generateExportText,
+  calcOverallActivity,
+  calcOverallSymptom,
 } from '../../src/utils.js';
 
 describe('getDateStr', () => {
   it('returns today in YYYY-MM-DD format', () => {
     const result = getDateStr();
     expect(result).toMatch(/^\d{4}-\d{2}-\d{2}$/);
-    const today = new Date().toISOString().split('T')[0];
+    const now = new Date();
+    const today = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
     expect(result).toBe(today);
   });
 
@@ -22,14 +25,16 @@ describe('getDateStr', () => {
     const result = getDateStr(-1);
     const d = new Date();
     d.setDate(d.getDate() - 1);
-    expect(result).toBe(d.toISOString().split('T')[0]);
+    const expected = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    expect(result).toBe(expected);
   });
 
   it('returns tomorrow when offset is 1', () => {
     const result = getDateStr(1);
     const d = new Date();
     d.setDate(d.getDate() + 1);
-    expect(result).toBe(d.toISOString().split('T')[0]);
+    const expected = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    expect(result).toBe(expected);
   });
 });
 
@@ -176,6 +181,12 @@ describe('emptyDay', () => {
     expect(day.crash).toBeNull();
     expect(day.unrefreshing_sleep).toBeNull();
   });
+
+  it('has false override flags', () => {
+    const day = emptyDay('2024-01-15');
+    expect(day.overrideActivity).toBe(false);
+    expect(day.overrideSymptom).toBe(false);
+  });
 });
 
 describe('generateExportText', () => {
@@ -222,5 +233,91 @@ describe('generateExportText', () => {
   it('omits plan section when plan is empty', () => {
     const text = generateExportText([], { causes: [], barriers: [], strategies: [] });
     expect(text).not.toContain('=== MY CRASH AVOIDANCE PLAN ===');
+  });
+});
+
+describe('calcOverallActivity', () => {
+  it('returns the average of physical, mental, emotional', () => {
+    expect(calcOverallActivity({ physical: '2', mental: '4', emotional: '6' })).toBe(4);
+  });
+
+  it('ignores empty string values', () => {
+    expect(calcOverallActivity({ physical: '3', mental: '', emotional: '5' })).toBe(4);
+  });
+
+  it('returns null when all values are empty', () => {
+    expect(calcOverallActivity({ physical: '', mental: '', emotional: '' })).toBeNull();
+  });
+
+  it('handles string number values', () => {
+    expect(calcOverallActivity({ physical: '10', mental: '0', emotional: '5' })).toBe(5);
+  });
+
+  it('returns the value when only one field is filled', () => {
+    expect(calcOverallActivity({ physical: '7', mental: '', emotional: '' })).toBe(7);
+  });
+
+  it('ignores null and undefined values', () => {
+    expect(calcOverallActivity({ physical: null, mental: undefined, emotional: '6' })).toBe(6);
+  });
+});
+
+describe('calcOverallSymptom', () => {
+  const baseForm = {
+    fatigue: { am: '2', mid: '4', pm: '6' },
+    pain: { am: '4', mid: '6', pm: '8' },
+    nausea_gi: { am: '1', mid: '3', pm: '5' },
+    brain_fog: { am: '3', mid: '5', pm: '7' },
+    other_symptom: { name: '', am: '', mid: '', pm: '' },
+  };
+
+  it('averages symptom fields for am period', () => {
+    expect(calcOverallSymptom(baseForm, 'am')).toBe(2.5);
+  });
+
+  it('averages symptom fields for mid period', () => {
+    expect(calcOverallSymptom(baseForm, 'mid')).toBe(4.5);
+  });
+
+  it('averages symptom fields for pm period', () => {
+    expect(calcOverallSymptom(baseForm, 'pm')).toBe(6.5);
+  });
+
+  it('includes other_symptom when name is non-empty', () => {
+    const form = {
+      ...baseForm,
+      other_symptom: { name: 'dizziness', am: '10', mid: '10', pm: '10' },
+    };
+    expect(calcOverallSymptom(form, 'am')).toBe(4);
+  });
+
+  it('excludes other_symptom when name is empty', () => {
+    const form = {
+      ...baseForm,
+      other_symptom: { name: '', am: '10', mid: '10', pm: '10' },
+    };
+    expect(calcOverallSymptom(form, 'am')).toBe(2.5);
+  });
+
+  it('ignores empty string values', () => {
+    const form = {
+      fatigue: { am: '4', mid: '', pm: '' },
+      pain: { am: '', mid: '', pm: '' },
+      nausea_gi: { am: '6', mid: '', pm: '' },
+      brain_fog: { am: '', mid: '', pm: '' },
+      other_symptom: { name: '', am: '', mid: '', pm: '' },
+    };
+    expect(calcOverallSymptom(form, 'am')).toBe(5);
+  });
+
+  it('returns null when all values for a period are empty', () => {
+    const form = {
+      fatigue: { am: '', mid: '', pm: '' },
+      pain: { am: '', mid: '', pm: '' },
+      nausea_gi: { am: '', mid: '', pm: '' },
+      brain_fog: { am: '', mid: '', pm: '' },
+      other_symptom: { name: '', am: '', mid: '', pm: '' },
+    };
+    expect(calcOverallSymptom(form, 'am')).toBeNull();
   });
 });

@@ -337,15 +337,17 @@ describe('getLast30Dates', () => {
 
   it('ends with today', () => {
     const dates = getLast30Dates();
-    const today = new Date().toISOString().split('T')[0];
+    const now = new Date();
+    const today = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
     expect(dates[29]).toBe(today);
   });
 
   it('starts 29 days ago', () => {
     const dates = getLast30Dates();
-    const expected = new Date();
-    expected.setDate(expected.getDate() - 29);
-    expect(dates[0]).toBe(expected.toISOString().split('T')[0]);
+    const d = new Date();
+    d.setDate(d.getDate() - 29);
+    const expected = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    expect(dates[0]).toBe(expected);
   });
 
   it('dates are in ascending chronological order', () => {
@@ -358,10 +360,11 @@ describe('getLast30Dates', () => {
   it('has consecutive dates with no gaps', () => {
     const dates = getLast30Dates();
     for (let i = 1; i < dates.length; i++) {
+      // Advance previous date by 1 day using local time to avoid DST drift
       const prev = new Date(dates[i - 1] + 'T12:00:00');
-      const curr = new Date(dates[i] + 'T12:00:00');
-      const diff = (curr - prev) / (1000 * 60 * 60 * 24);
-      expect(diff).toBe(1);
+      prev.setDate(prev.getDate() + 1);
+      const expected = `${prev.getFullYear()}-${String(prev.getMonth()+1).padStart(2,'0')}-${String(prev.getDate()).padStart(2,'0')}`;
+      expect(dates[i]).toBe(expected);
     }
   });
 });

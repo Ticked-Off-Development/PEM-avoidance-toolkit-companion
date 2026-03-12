@@ -53,11 +53,33 @@ export function avgField(f) {
   return vals.length > 0 ? vals.reduce((a, b) => a + b, 0) / vals.length : null;
 }
 
+export function calcOverallActivity(form) {
+  const vals = [form.physical, form.mental, form.emotional]
+    .filter(x => x !== '' && x !== undefined && x !== null)
+    .map(Number)
+    .filter(x => !isNaN(x));
+  return vals.length > 0 ? vals.reduce((a, b) => a + b, 0) / vals.length : null;
+}
+
+export function calcOverallSymptom(form, period) {
+  const fields = [form.fatigue, form.pain, form.nausea_gi, form.brain_fog];
+  if (form.other_symptom && form.other_symptom.name) {
+    fields.push(form.other_symptom);
+  }
+  const vals = fields
+    .map(f => f && f[period])
+    .filter(x => x !== '' && x !== undefined && x !== null)
+    .map(Number)
+    .filter(x => !isNaN(x));
+  return vals.length > 0 ? vals.reduce((a, b) => a + b, 0) / vals.length : null;
+}
+
 export function emptyDay(date) {
   return {
     id: `day-${date}`,
     date,
     physical: '', mental: '', emotional: '', overall_activity: '',
+    overrideActivity: false, overrideSymptom: false,
     unrefreshing_sleep: null,
     fatigue: { am: '', mid: '', pm: '' },
     pain: { am: '', mid: '', pm: '' },
