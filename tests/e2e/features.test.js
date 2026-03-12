@@ -490,6 +490,17 @@ test.describe('Learn Section - PEM Definition', () => {
     await expect(page.getByText('Delayed Onset Muscle Soreness (DOMS)')).toBeVisible({ timeout: 2000 });
   });
 
+  test('shows Quick Log vs Full Log section', async ({ page }) => {
+    await completeOnboarding(page);
+    await page.getByLabel('Learn').click();
+    await page.waitForTimeout(500);
+    await expect(page.getByText('Quick Log vs Full Log')).toBeVisible({ timeout: 3000 });
+    // Expand it
+    await page.getByText('Quick Log vs Full Log').click();
+    await page.waitForTimeout(300);
+    await expect(page.getByText('Consistency matters more than detail')).toBeVisible({ timeout: 2000 });
+  });
+
   test('PEM section mentions crash logging connection', async ({ page }) => {
     await completeOnboarding(page);
     await page.getByLabel('Learn').click();
