@@ -137,8 +137,8 @@ export function AutoScoreInput({ label, computedValue, value, isOverride, onOver
   if (isOverride) {
     return (
       <div role="group" aria-label={`${label} score`} style={{ background: 'var(--acc-d)', borderRadius: 8, padding: '8px 10px', border: '1px solid rgba(96,165,250,0.2)' }}>
-        <div style={{ fontSize: 11, color: 'var(--acc)', marginBottom: 6, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6 }}>
-          {label} <span style={{ color: 'var(--org)' }}>*</span> <ResetLink onClick={onReset} />
+        <div style={{ fontSize: 11, color: 'var(--acc)', marginBottom: 6, fontWeight: 600 }}>
+          <span>{label} <span style={{ color: 'var(--org)' }}>*</span></span>{' '}<ResetLink onClick={onReset} />
         </div>
         <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }} role="radiogroup" aria-label={`${label} score selector`}>
           {[...Array(11)].map((_, i) => {
@@ -178,8 +178,8 @@ export function AutoSymptomRow({ label, computedData, data, isOverride, onOverri
   if (isOverride) {
     return (
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 0', borderBottom: '1px solid rgba(42,51,64,0.3)' }} role="group" aria-label={`${label} symptom scores`}>
-        <div style={{ width: 85, fontSize: 13, color: 'var(--acc)', fontWeight: 600, flexShrink: 0, display: 'flex', alignItems: 'center', gap: 4 }}>
-          {label} <span style={{ color: 'var(--org)' }}>*</span>
+        <div style={{ width: 85, fontSize: 13, color: 'var(--acc)', fontWeight: 600, flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 2 }}>
+          <span>{label} <span style={{ color: 'var(--org)' }}>*</span></span>
           <ResetLink onClick={onReset} />
         </div>
         <div style={{ display: 'flex', gap: 8, flex: 1 }}>
