@@ -125,8 +125,8 @@ function formatCalc(v) {
 function ResetLink({ onClick }) {
   return (
     <button onClick={e => { e.stopPropagation(); onClick(); }} aria-label="Reset to calculated average" style={{
-      background: 'none', border: 'none', padding: 0, fontSize: 10, color: 'var(--acc)',
-      cursor: 'pointer', fontFamily: 'var(--font)', textDecoration: 'underline',
+      background: 'none', border: 'none', padding: 0, fontSize: 12, color: 'var(--org)',
+      cursor: 'pointer', fontFamily: 'var(--font)', textDecoration: 'underline', fontWeight: 600,
     }}>reset</button>
   );
 }
@@ -166,7 +166,7 @@ export function AutoScoreInput({ label, computedValue, value, isOverride, onOver
       </div>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 36, borderRadius: 6, background: 'rgba(96,165,250,0.08)' }}>
         <span style={{ fontSize: 20, fontWeight: 700, fontFamily: 'var(--mono)', color: display !== null ? colorFn(display) : 'var(--tx-d)' }}>
-          {display !== null ? display : '\u2014'}
+          {display !== null ? display : '—'}
         </span>
       </div>
       {display !== null && <div style={{ fontSize: 9, color: 'var(--tx-d)', marginTop: 4, textAlign: 'center' }}>tap to override</div>}
@@ -183,12 +183,15 @@ export function AutoSymptomRow({ label, computedData, data, isOverride, onOverri
           <ResetLink onClick={onReset} />
         </div>
         <div style={{ display: 'flex', gap: 8, flex: 1 }}>
-          {['am', 'mid', 'pm'].map((p, idx) => (
+          {['am', 'mid', 'pm'].map((p, idx) => {
+            const raw = data[p];
+            const safeVal = (raw === '' || raw == null || (!isNaN(Number(raw)) && String(raw).trim() !== '')) ? (raw ?? '') : '';
+            return (
             <div key={p} style={{ flex: 1, textAlign: 'center' }}>
               <div style={{ fontSize: 10, color: 'var(--tx-d)', marginBottom: 4 }}>{['AM', 'Mid', 'PM'][idx]}</div>
               <input
-                type="number" min="0" max="10" placeholder="\u2014"
-                value={data[p]}
+                type="number" min="0" max="10" placeholder="—"
+                value={safeVal}
                 onChange={(e) => {
                   const val = e.target.value;
                   if (val === '') { onOverride(p, val); return; }
@@ -199,7 +202,8 @@ export function AutoSymptomRow({ label, computedData, data, isOverride, onOverri
                 style={{ ...s.input, textAlign: 'center', padding: '8px 4px', fontSize: 14, fontWeight: 600, color: symptomColor(data[p]), minHeight: 40 }}
               />
             </div>
-          ))}
+            );
+          })}
         </div>
       </div>
     );
@@ -234,7 +238,7 @@ export function AutoSymptomRow({ label, computedData, data, isOverride, onOverri
                 color: display !== null ? symptomColor(display) : 'var(--tx-d)',
                 background: 'rgba(96,165,250,0.08)', borderStyle: 'dashed',
               }}>
-                {display !== null ? display : '\u2014'}
+                {display !== null ? display : '—'}
               </div>
             </div>
           );
