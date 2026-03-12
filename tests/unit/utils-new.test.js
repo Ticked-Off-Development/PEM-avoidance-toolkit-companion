@@ -8,6 +8,7 @@ import {
   emptyDay,
   avgField,
 } from '../../src/utils.js';
+import { migrateData, DATA_SCHEMA_VERSION } from '../../src/db.js';
 
 // --- Helper: create a day with specific values ---
 function makeDay(date, overrides = {}) {
@@ -544,5 +545,111 @@ describe('Quick Log - avgField with single period', () => {
 
   it('returns null when all periods are empty', () => {
     expect(avgField({ am: '', mid: '', pm: '' })).toBeNull();
+  });
+});
+
+// --- Data Migration ---
+
+describe('migrateData', () => {
+  it('returns null/undefined input unchanged', () => {
+    expect(migrateData(null)).toBeNull();
+    expect(migrateData(undefined)).toBeUndefined();
+  });
+
+  it('backfills entryMode on legacy day records without it', () => {
+    const stored = {
+      days: [
+        { date: '2024-01-01', physical: '3', mental: '4' },
+        { date: '2024-01-02', physical: '5' },
+      ],
+      plan: { causes: [], barriers: [], strategies: [] },
+    };
+    const migrated = migrateData(stored);
+    expect(migrated.days[0].entryMode).toBe('full');
+    expect(migrated.days[1].entryMode).toBe('full');
+  });
+
+  it('does not overwrite existing entryMode values', () => {
+    const stored = {
+      days: [
+        { date: '2024-01-01', entryMode: 'quick', overall_activity: '5' },
+        { date: '2024-01-02', entryMode: 'full', physical: '3' },
+      ],
+      plan: { causes: [], barriers: [], strategies: [] },
+    };
+    const migrated = migrateData(stored);
+    expect(migrated.days[0].entryMode).toBe('quick');
+    expect(migrated.days[1].entryMode).toBe('full');
+  });
+
+  it('sets schemaVersion to current DATA_SCHEMA_VERSION', () => {
+    const stored = {
+      days: [{ date: '2024-01-01' }],
+      plan: { causes: [], barriers: [], strategies: [] },
+    };
+    const migrated = migrateData(stored);
+    expect(migrated.schemaVersion).toBe(DATA_SCHEMA_VERSION);
+  });
+
+  it('skips migration if schemaVersion is already current', () => {
+    const stored = {
+      schemaVersion: DATA_SCHEMA_VERSION,
+      days: [
+        { date: '2024-01-01' }, // no entryMode — but migration should NOT run
+      ],
+      plan: { causes: [], barriers: [], strategies: [] },
+    };
+    const migrated = migrateData(stored);
+    // Should be returned as-is (same reference)
+    expect(migrated).toBe(stored);
+    // entryMode was NOT added since migration was skipped
+    expect(migrated.days[0].entryMode).toBeUndefined();
+  });
+
+  it('is non-destructive — preserves all existing fields', () => {
+    const stored = {
+      days: [{
+        date: '2024-01-01',
+        physical: '3',
+        mental: '5',
+        emotional: '2',
+        overall_activity: '4',
+        fatigue: { am: '3', mid: '4', pm: '5' },
+        crash: true,
+        comments: 'bad day',
+      }],
+      plan: { causes: ['heat'], barriers: ['work'], strategies: ['rest'] },
+      onboarded: true,
+      theme: 'light',
+      tourCompleted: true,
+    };
+    const migrated = migrateData(stored);
+    expect(migrated.days[0].physical).toBe('3');
+    expect(migrated.days[0].mental).toBe('5');
+    expect(migrated.days[0].crash).toBe(true);
+    expect(migrated.days[0].comments).toBe('bad day');
+    expect(migrated.plan.causes).toEqual(['heat']);
+    expect(migrated.onboarded).toBe(true);
+    expect(migrated.theme).toBe('light');
+  });
+
+  it('handles empty days array', () => {
+    const stored = {
+      days: [],
+      plan: { causes: [], barriers: [], strategies: [] },
+    };
+    const migrated = migrateData(stored);
+    expect(migrated.days).toEqual([]);
+    expect(migrated.schemaVersion).toBe(DATA_SCHEMA_VERSION);
+  });
+
+  it('handles stored data without days array', () => {
+    const stored = {
+      plan: { causes: [], barriers: [], strategies: [] },
+      onboarded: true,
+    };
+    const migrated = migrateData(stored);
+    expect(migrated.schemaVersion).toBe(DATA_SCHEMA_VERSION);
+    expect(migrated.plan).toBeDefined();
   });
 });

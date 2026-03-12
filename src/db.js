@@ -2,6 +2,30 @@ const DB_NAME = 'pem_toolkit_db';
 const DB_VERSION = 1;
 const STORE = 'data';
 
+// App-level data schema version (separate from IndexedDB version).
+// Increment when adding new fields to stored data that need backfilling.
+export const DATA_SCHEMA_VERSION = 2;
+
+// Migrate stored app data to the current schema version.
+// Non-destructive and additive — only adds missing fields, never removes data.
+export function migrateData(stored) {
+  if (!stored) return stored;
+  const version = stored.schemaVersion || 1;
+  if (version >= DATA_SCHEMA_VERSION) return stored;
+
+  const migrated = { ...stored };
+
+  // v1 → v2: backfill entryMode on existing day records
+  if (version < 2 && Array.isArray(migrated.days)) {
+    migrated.days = migrated.days.map(day =>
+      day.entryMode ? day : { ...day, entryMode: 'full' }
+    );
+  }
+
+  migrated.schemaVersion = DATA_SCHEMA_VERSION;
+  return migrated;
+}
+
 function openDB() {
   return new Promise((resolve, reject) => {
     const req = indexedDB.open(DB_NAME, DB_VERSION);
