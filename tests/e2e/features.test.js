@@ -247,3 +247,162 @@ test.describe('Plan View - Accessibility', () => {
     expect(expanded).toBe('true');
   });
 });
+
+// Helper: open day editor for today
+async function openDayEditor(page) {
+  await completeOnboarding(page);
+  await page.getByRole('button', { name: 'Log today\'s entry' }).click();
+  await page.waitForTimeout(500);
+}
+
+// Helper: select a score from a ScoreInput radio group
+async function selectScore(page, groupLabel, value) {
+  const group = page.locator(`[aria-label="${groupLabel} score selector"]`);
+  await group.getByRole('radio', { name: String(value), exact: true }).click();
+}
+
+test.describe('Auto-Calculate Overall Activity', () => {
+  test('auto-calculates average of activity scores', async ({ page }) => {
+    await openDayEditor(page);
+    await selectScore(page, 'Physical', 2);
+    await selectScore(page, 'Mental', 4);
+    await selectScore(page, 'Emotional', 6);
+    await page.waitForTimeout(300);
+    // Overall Activity auto-calculated group should show "4.0"
+    const autoGroup = page.locator('[aria-label="Overall Activity ★ score (auto-calculated)"]');
+    await expect(autoGroup.getByText('4.0')).toBeVisible({ timeout: 2000 });
+    await expect(autoGroup.getByText('tap to override')).toBeVisible();
+  });
+
+  test('shows em-dash when no activity data', async ({ page }) => {
+    await openDayEditor(page);
+    const autoGroup = page.locator('[aria-label="Overall Activity ★ score (auto-calculated)"]');
+    await expect(autoGroup.getByText('—')).toBeVisible({ timeout: 2000 });
+    await expect(autoGroup.getByText('tap to override')).not.toBeVisible();
+  });
+
+  test('tap to override enters override mode', async ({ page }) => {
+    await openDayEditor(page);
+    await selectScore(page, 'Physical', 2);
+    await selectScore(page, 'Mental', 4);
+    await selectScore(page, 'Emotional', 6);
+    await page.waitForTimeout(300);
+    // Click the auto-calculated area to enter override
+    const autoGroup = page.locator('[aria-label="Overall Activity ★ score (auto-calculated)"]');
+    await autoGroup.click();
+    await page.waitForTimeout(300);
+    // Should now show override mode with reset button and radio buttons
+    const overrideGroup = page.locator('[aria-label="Overall Activity ★ score"]');
+    await expect(overrideGroup).toBeVisible({ timeout: 2000 });
+    await expect(overrideGroup.getByLabel('Reset to calculated average')).toBeVisible();
+    // Radio button for the rounded value (4) should be checked
+    const radio4 = overrideGroup.getByRole('radio', { name: '4', exact: true });
+    await expect(radio4).toHaveAttribute('aria-checked', 'true');
+  });
+
+  test('reset returns to auto-calculated state', async ({ page }) => {
+    await openDayEditor(page);
+    await selectScore(page, 'Physical', 2);
+    await selectScore(page, 'Mental', 4);
+    await selectScore(page, 'Emotional', 6);
+    await page.waitForTimeout(300);
+    // Enter override mode
+    const autoGroup = page.locator('[aria-label="Overall Activity ★ score (auto-calculated)"]');
+    await autoGroup.click();
+    await page.waitForTimeout(300);
+    // Select a different value (9)
+    const overrideGroup = page.locator('[aria-label="Overall Activity ★ score"]');
+    await overrideGroup.getByRole('radio', { name: '9', exact: true }).click();
+    // Click reset
+    await overrideGroup.getByLabel('Reset to calculated average').click();
+    await page.waitForTimeout(300);
+    // Should return to auto-calculated showing 4.0
+    const restoredGroup = page.locator('[aria-label="Overall Activity ★ score (auto-calculated)"]');
+    await expect(restoredGroup.getByText('4.0')).toBeVisible({ timeout: 2000 });
+    await expect(restoredGroup.getByText('avg')).toBeVisible();
+  });
+});
+
+test.describe('Auto-Calculate Overall Symptom', () => {
+  test('auto-calculates symptom averages per period', async ({ page }) => {
+    await openDayEditor(page);
+    // Fill Fatigue AM=4, Pain AM=6
+    await page.getByLabel('Fatigue AM score').fill('4');
+    await page.getByLabel('Pain AM score').fill('6');
+    await page.waitForTimeout(300);
+    // Overall Symptom auto-calculated group should show AM=5.0
+    const autoGroup = page.locator('[aria-label="Overall Symptom ★ symptom scores (auto-calculated)"]');
+    await expect(autoGroup.getByText('5.0')).toBeVisible({ timeout: 2000 });
+    // PM should show em-dash (no data) — use .first() since Mid also shows —
+    await expect(autoGroup.getByText('—').first()).toBeVisible();
+  });
+
+  test('tap to override enters override mode', async ({ page }) => {
+    await openDayEditor(page);
+    await page.getByLabel('Fatigue AM score').fill('4');
+    await page.getByLabel('Pain AM score').fill('6');
+    await page.waitForTimeout(300);
+    // Click the auto-calculated row
+    const autoGroup = page.locator('[aria-label="Overall Symptom ★ symptom scores (auto-calculated)"]');
+    await autoGroup.click();
+    await page.waitForTimeout(300);
+    // Should now show override mode with input fields and reset button
+    const overrideGroup = page.locator('[aria-label="Overall Symptom ★ symptom scores"]');
+    await expect(overrideGroup).toBeVisible({ timeout: 2000 });
+    await expect(overrideGroup.getByLabel('Reset to calculated average')).toBeVisible();
+    // AM input should have the calculated value
+    const amInput = overrideGroup.getByLabel('Overall Symptom ★ AM score');
+    await expect(amInput).toBeVisible();
+    await expect(amInput).toHaveValue('5.0');
+  });
+
+  test('reset returns to auto-calculated state', async ({ page }) => {
+    await openDayEditor(page);
+    await page.getByLabel('Fatigue AM score').fill('4');
+    await page.getByLabel('Pain AM score').fill('6');
+    await page.waitForTimeout(300);
+    // Enter override mode
+    const autoGroup = page.locator('[aria-label="Overall Symptom ★ symptom scores (auto-calculated)"]');
+    await autoGroup.click();
+    await page.waitForTimeout(300);
+    // Change AM value
+    const overrideGroup = page.locator('[aria-label="Overall Symptom ★ symptom scores"]');
+    const amInput = overrideGroup.getByLabel('Overall Symptom ★ AM score');
+    await amInput.fill('9');
+    // Click reset
+    await overrideGroup.getByLabel('Reset to calculated average').click();
+    await page.waitForTimeout(300);
+    // Should return to auto-calculated with avg label
+    const restoredGroup = page.locator('[aria-label="Overall Symptom ★ symptom scores (auto-calculated)"]');
+    await expect(restoredGroup).toBeVisible({ timeout: 2000 });
+    await expect(restoredGroup.getByText('5.0')).toBeVisible();
+  });
+});
+
+test.describe('Auto-Calculate Save & Reload', () => {
+  test('auto-calculated values persist after save and re-open', async ({ page }) => {
+    await openDayEditor(page);
+    // Fill activity scores: avg = (3+6+9)/3 = 6
+    await selectScore(page, 'Physical', 3);
+    await selectScore(page, 'Mental', 6);
+    await selectScore(page, 'Emotional', 9);
+    // Fill a symptom: Fatigue AM=8
+    await page.getByLabel('Fatigue AM score').fill('8');
+    await page.waitForTimeout(300);
+    // Save
+    await page.getByText('Save').first().click();
+    await page.waitForTimeout(500);
+    // Re-open the saved entry
+    await page.getByRole('button', { name: "Edit today's entry" }).click();
+    await page.waitForTimeout(500);
+    // Entry re-opens in auto-calculated mode (overrideActivity: false is preserved)
+    // Overall Activity should show 6.0 (computed from saved scores)
+    const actGroup = page.locator('[aria-label="Overall Activity ★ score (auto-calculated)"]');
+    await expect(actGroup).toBeVisible({ timeout: 2000 });
+    await expect(actGroup.getByText('6.0')).toBeVisible();
+    // Overall Symptom AM should show 8.0 (computed from saved Fatigue AM=8)
+    const symGroup = page.locator('[aria-label="Overall Symptom ★ symptom scores (auto-calculated)"]');
+    await expect(symGroup).toBeVisible({ timeout: 2000 });
+    await expect(symGroup.getByText('8.0')).toBeVisible();
+  });
+});
