@@ -78,6 +78,7 @@ export function emptyDay(date) {
   return {
     id: `day-${date}`,
     date,
+    entryMode: 'full',
     physical: '', mental: '', emotional: '', overall_activity: '',
     overrideActivity: false, overrideSymptom: false,
     unrefreshing_sleep: null,
@@ -94,7 +95,7 @@ export function emptyDay(date) {
 
 export function generateCSV(days) {
   const headers = [
-    'Date', 'Physical', 'Mental', 'Emotional', 'Overall Activity',
+    'Date', 'Entry Mode', 'Physical', 'Mental', 'Emotional', 'Overall Activity',
     'Unrefreshing Sleep', 'Fatigue AM', 'Fatigue Mid', 'Fatigue PM',
     'Pain AM', 'Pain Mid', 'Pain PM', 'Nausea/GI AM', 'Nausea/GI Mid', 'Nausea/GI PM',
     'Brain Fog AM', 'Brain Fog Mid', 'Brain Fog PM',
@@ -111,7 +112,7 @@ export function generateCSV(days) {
   const rows = [headers.join(',')];
   days.forEach(d => {
     rows.push([
-      d.date, d.physical, d.mental, d.emotional, d.overall_activity,
+      d.date, d.entryMode || 'full', d.physical, d.mental, d.emotional, d.overall_activity,
       d.unrefreshing_sleep === true ? 'Yes' : d.unrefreshing_sleep === false ? 'No' : '',
       d.fatigue?.am, d.fatigue?.mid, d.fatigue?.pm,
       d.pain?.am, d.pain?.mid, d.pain?.pm,
@@ -237,15 +238,16 @@ export function generateExportText(days, plan) {
   }
 
   lines.push('=== TRACKING DATA ===', '');
-  lines.push('Date       | Activity | Symptom | Sleep     | Crash | Comments');
-  lines.push('-'.repeat(75));
+  lines.push('Date       | Mode  | Activity | Symptom | Sleep     | Crash | Comments');
+  lines.push('-'.repeat(85));
   days.forEach(d => {
+    const mode = (d.entryMode || 'full').padEnd(5);
     const sym = avgField(d.overall_symptom);
     const symStr = sym !== null ? sym.toFixed(1).padEnd(7) : '  -    ';
     const slp = d.unrefreshing_sleep === true ? 'Unrefresh' : d.unrefreshing_sleep === false ? 'OK       ' : '  -      ';
     const crash = d.crash === true ? 'YES  ' : d.crash === false ? 'No   ' : '  -  ';
     const act = d.overall_activity != null && d.overall_activity !== '' ? String(d.overall_activity).padEnd(8) : '  -     ';
-    lines.push(`${d.date} | ${act} | ${symStr} | ${slp} | ${crash} | ${d.comments || ''}`);
+    lines.push(`${d.date} | ${mode} | ${act} | ${symStr} | ${slp} | ${crash} | ${d.comments || ''}`);
   });
 
   return lines.join('\n');

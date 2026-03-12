@@ -1,10 +1,12 @@
 import { describe, it, expect } from 'vitest';
 import {
   generateCSV,
+  generateExportText,
   computeCorrelations,
   computeCrashRisk,
   getLast30Dates,
   emptyDay,
+  avgField,
 } from '../../src/utils.js';
 
 // --- Helper: create a day with specific values ---
@@ -33,11 +35,12 @@ describe('generateCSV', () => {
   it('includes all expected column headers', () => {
     const csv = generateCSV([]);
     const headers = csv.split('\n')[0].split(',');
-    expect(headers).toHaveLength(27);
+    expect(headers).toHaveLength(28);
     expect(headers[0]).toBe('Date');
-    expect(headers[5]).toBe('Unrefreshing Sleep');
-    expect(headers[25]).toBe('Crash');
-    expect(headers[26]).toBe('Comments');
+    expect(headers[1]).toBe('Entry Mode');
+    expect(headers[6]).toBe('Unrefreshing Sleep');
+    expect(headers[26]).toBe('Crash');
+    expect(headers[27]).toBe('Comments');
   });
 
   it('generates one data row per day', () => {
@@ -56,10 +59,10 @@ describe('generateCSV', () => {
       makeDay('2024-01-17', { unrefreshing_sleep: null }),
     ];
     const lines = generateCSV(days).split('\n');
-    // sleep is column index 5
-    expect(lines[1].split(',')[5]).toBe('Yes');
-    expect(lines[2].split(',')[5]).toBe('No');
-    expect(lines[3].split(',')[5]).toBe('');
+    // sleep is column index 6 (Date, Entry Mode, Physical, Mental, Emotional, Overall Activity, Unrefreshing Sleep)
+    expect(lines[1].split(',')[6]).toBe('Yes');
+    expect(lines[2].split(',')[6]).toBe('No');
+    expect(lines[3].split(',')[6]).toBe('');
   });
 
   it('maps crash field correctly', () => {
@@ -69,10 +72,10 @@ describe('generateCSV', () => {
       makeDay('2024-01-17', { crash: null }),
     ];
     const lines = generateCSV(days).split('\n');
-    // crash is column index 25 (shifted by 4 for other_symptom columns)
-    expect(lines[1].split(',')[25]).toBe('Yes');
-    expect(lines[2].split(',')[25]).toBe('No');
-    expect(lines[3].split(',')[25]).toBe('');
+    // crash is column index 26 (shifted +1 for Entry Mode column)
+    expect(lines[1].split(',')[26]).toBe('Yes');
+    expect(lines[2].split(',')[26]).toBe('No');
+    expect(lines[3].split(',')[26]).toBe('');
   });
 
   it('includes symptom AM/Mid/PM values', () => {
@@ -366,5 +369,180 @@ describe('getLast30Dates', () => {
       const expected = `${prev.getFullYear()}-${String(prev.getMonth()+1).padStart(2,'0')}-${String(prev.getDate()).padStart(2,'0')}`;
       expect(dates[i]).toBe(expected);
     }
+  });
+});
+
+// --- Quick Log: entryMode data model ---
+
+describe('Quick Log - emptyDay entryMode', () => {
+  it('emptyDay includes entryMode: "full" by default', () => {
+    const day = emptyDay('2024-01-15');
+    expect(day.entryMode).toBe('full');
+  });
+
+  it('makeDay preserves entryMode when set to quick', () => {
+    const day = makeDay('2024-01-15', { entryMode: 'quick' });
+    expect(day.entryMode).toBe('quick');
+  });
+
+  it('Quick Log entry has null individual dimensions and only overall fields', () => {
+    const day = makeDay('2024-01-15', {
+      entryMode: 'quick',
+      overall_activity: '5',
+      overrideActivity: true,
+      overall_symptom: { am: '6', mid: '', pm: '' },
+      overrideSymptom: true,
+      crash: false,
+      unrefreshing_sleep: true,
+      // physical, mental, emotional remain empty from emptyDay
+    });
+    expect(day.entryMode).toBe('quick');
+    expect(day.overall_activity).toBe('5');
+    expect(day.overall_symptom.am).toBe('6');
+    expect(day.overall_symptom.mid).toBe('');
+    expect(day.overall_symptom.pm).toBe('');
+    expect(day.physical).toBe('');
+    expect(day.mental).toBe('');
+    expect(day.emotional).toBe('');
+  });
+});
+
+// --- Quick Log: CSV export ---
+
+describe('Quick Log - generateCSV with entryMode', () => {
+  it('includes Entry Mode column header', () => {
+    const csv = generateCSV([]);
+    const headers = csv.split('\n')[0].split(',');
+    expect(headers).toContain('Entry Mode');
+    expect(headers).toHaveLength(28);
+  });
+
+  it('Quick Log rows have "quick" in Entry Mode column', () => {
+    const days = [makeDay('2024-01-15', {
+      entryMode: 'quick',
+      overall_activity: '5',
+      overall_symptom: { am: '6', mid: '', pm: '' },
+      crash: false,
+      unrefreshing_sleep: true,
+    })];
+    const csv = generateCSV(days);
+    const row = csv.split('\n')[1].split(',');
+    // Entry Mode is column index 1 (after Date)
+    expect(row[1]).toBe('quick');
+  });
+
+  it('Full Log rows have "full" in Entry Mode column', () => {
+    const days = [makeDay('2024-01-15', { entryMode: 'full', physical: '3' })];
+    const csv = generateCSV(days);
+    const row = csv.split('\n')[1].split(',');
+    expect(row[1]).toBe('full');
+  });
+
+  it('legacy entries without entryMode default to "full" in CSV', () => {
+    const day = makeDay('2024-01-15', { physical: '3' });
+    delete day.entryMode;
+    const csv = generateCSV([day]);
+    const row = csv.split('\n')[1].split(',');
+    expect(row[1]).toBe('full');
+  });
+
+  it('Quick Log rows have empty cells for individual dimensions', () => {
+    const days = [makeDay('2024-01-15', {
+      entryMode: 'quick',
+      overall_activity: '5',
+      overall_symptom: { am: '6', mid: '', pm: '' },
+    })];
+    const csv = generateCSV(days);
+    const row = csv.split('\n')[1].split(',');
+    // Physical is column index 2 (Date, Entry Mode, Physical)
+    expect(row[2]).toBe('');
+    expect(row[3]).toBe('');
+    expect(row[4]).toBe('');
+  });
+});
+
+// --- Quick Log: text export ---
+
+describe('Quick Log - generateExportText with entryMode', () => {
+  it('includes Mode column in text export header', () => {
+    const text = generateExportText([], { causes: [], barriers: [], strategies: [] });
+    expect(text).toContain('Mode');
+  });
+
+  it('shows quick mode in text export for quick entries', () => {
+    const days = [makeDay('2024-01-15', {
+      entryMode: 'quick',
+      overall_activity: '5',
+      overall_symptom: { am: '6', mid: '', pm: '' },
+      crash: false,
+      unrefreshing_sleep: false,
+    })];
+    const text = generateExportText(days, { causes: [], barriers: [], strategies: [] });
+    expect(text).toContain('quick');
+  });
+});
+
+// --- Quick Log: statistical calculations with null fields ---
+
+describe('Quick Log - computeCorrelations with null dimensions', () => {
+  it('handles Quick Log entries with null individual dimensions', () => {
+    // Mix of quick and full entries
+    const days = [
+      // 5 full entries
+      ...Array.from({ length: 5 }, (_, i) => makeDay(
+        `2024-01-${String(i + 1).padStart(2, '0')}`,
+        {
+          entryMode: 'full',
+          physical: String(i + 1),
+          mental: String(i + 2),
+          emotional: String(i),
+          overall_activity: String(i + 1),
+          fatigue: { am: String(i + 1), mid: String(i + 1), pm: String(i + 1) },
+          overall_symptom: { am: String(i + 1), mid: String(i + 1), pm: String(i + 1) },
+        }
+      )),
+      // 5 quick entries (no individual dimensions)
+      ...Array.from({ length: 5 }, (_, i) => makeDay(
+        `2024-01-${String(i + 6).padStart(2, '0')}`,
+        {
+          entryMode: 'quick',
+          overall_activity: String(i + 3),
+          overall_symptom: { am: String(i + 3), mid: '', pm: '' },
+        }
+      )),
+    ];
+    const result = computeCorrelations(days);
+    expect(result).toHaveProperty('labels');
+    expect(result).toHaveProperty('matrix');
+    // Physical only has 5 valid entries, so correlations involving it should still compute
+    const physIdx = result.labels.indexOf('Physical');
+    expect(physIdx).toBeGreaterThanOrEqual(0);
+  });
+});
+
+describe('Quick Log - computeCrashRisk with quick entries', () => {
+  it('works correctly with Quick Log entries (uses overall_activity)', () => {
+    const days = Array.from({ length: 10 }, (_, i) => makeDay(
+      `2024-01-${String(i + 1).padStart(2, '0')}`,
+      {
+        entryMode: 'quick',
+        overall_activity: '4',
+        overall_symptom: { am: '3', mid: '', pm: '' },
+      }
+    ));
+    const result = computeCrashRisk(days);
+    expect(result).not.toBeNull();
+    expect(result.atRisk).toBe(false);
+    expect(result.mean).toBe('4.0');
+  });
+});
+
+describe('Quick Log - avgField with single period', () => {
+  it('returns the single value when only am is filled', () => {
+    expect(avgField({ am: '6', mid: '', pm: '' })).toBe(6);
+  });
+
+  it('returns null when all periods are empty', () => {
+    expect(avgField({ am: '', mid: '', pm: '' })).toBeNull();
   });
 });
