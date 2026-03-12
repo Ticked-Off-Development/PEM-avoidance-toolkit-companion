@@ -16,7 +16,8 @@ describe('getDateStr', () => {
   it('returns today in YYYY-MM-DD format', () => {
     const result = getDateStr();
     expect(result).toMatch(/^\d{4}-\d{2}-\d{2}$/);
-    const today = new Date().toISOString().split('T')[0];
+    const now = new Date();
+    const today = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
     expect(result).toBe(today);
   });
 
@@ -24,14 +25,16 @@ describe('getDateStr', () => {
     const result = getDateStr(-1);
     const d = new Date();
     d.setDate(d.getDate() - 1);
-    expect(result).toBe(d.toISOString().split('T')[0]);
+    const expected = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    expect(result).toBe(expected);
   });
 
   it('returns tomorrow when offset is 1', () => {
     const result = getDateStr(1);
     const d = new Date();
     d.setDate(d.getDate() + 1);
-    expect(result).toBe(d.toISOString().split('T')[0]);
+    const expected = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    expect(result).toBe(expected);
   });
 });
 
