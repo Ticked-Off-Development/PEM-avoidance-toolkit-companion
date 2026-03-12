@@ -169,7 +169,7 @@ export function AutoScoreInput({ label, computedValue, value, isOverride, onOver
           {display !== null ? display : '—'}
         </span>
       </div>
-      {display !== null && <div style={{ fontSize: 9, color: 'var(--tx-d)', marginTop: 4, textAlign: 'center' }}>tap to override</div>}
+      {display !== null && <div style={{ fontSize: 13, color: 'var(--tx-d)', marginTop: 4, textAlign: 'center', cursor: 'pointer', padding: '2px 0' }}>tap to override</div>}
     </div>
   );
 }
