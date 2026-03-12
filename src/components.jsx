@@ -227,22 +227,25 @@ export function AutoSymptomRow({ label, computedData, data, isOverride, onOverri
       <div style={{ width: 85, fontSize: 13, color: 'var(--acc)', fontWeight: 600, flexShrink: 0, display: 'flex', alignItems: 'center', gap: 4 }}>
         {label} <span style={{ fontSize: 9, color: 'var(--tx-d)', fontWeight: 400 }}>avg</span>
       </div>
-      <div style={{ display: 'flex', gap: 8, flex: 1 }}>
-        {['am', 'mid', 'pm'].map((p, idx) => {
-          const display = formatCalc(computedData[p]);
-          return (
-            <div key={p} style={{ flex: 1, textAlign: 'center' }}>
-              <div style={{ fontSize: 10, color: 'var(--tx-d)', marginBottom: 4 }}>{['AM', 'Mid', 'PM'][idx]}</div>
-              <div style={{
-                ...s.input, textAlign: 'center', padding: '8px 4px', fontSize: 14, fontWeight: 600, minHeight: 40,
-                color: display !== null ? symptomColor(display) : 'var(--tx-d)',
-                background: 'rgba(96,165,250,0.08)', borderStyle: 'dashed',
-              }}>
-                {display !== null ? display : '—'}
+      <div style={{ display: 'flex', gap: 8, flex: 1, flexDirection: 'column' }}>
+        <div style={{ display: 'flex', gap: 8 }}>
+          {['am', 'mid', 'pm'].map((p, idx) => {
+            const display = formatCalc(computedData[p]);
+            return (
+              <div key={p} style={{ flex: 1, textAlign: 'center' }}>
+                <div style={{ fontSize: 10, color: 'var(--tx-d)', marginBottom: 4 }}>{['AM', 'Mid', 'PM'][idx]}</div>
+                <div style={{
+                  ...s.input, textAlign: 'center', padding: '8px 4px', fontSize: 14, fontWeight: 600, minHeight: 40,
+                  color: display !== null ? symptomColor(display) : 'var(--tx-d)',
+                  background: 'rgba(96,165,250,0.08)', borderStyle: 'dashed',
+                }}>
+                  {display !== null ? display : '—'}
+                </div>
               </div>
-            </div>
-          );
-        })}
+            );
+          })}
+        </div>
+        {hasAnyComputed && <div style={{ fontSize: 13, color: 'var(--tx-d)', textAlign: 'center', cursor: 'pointer', padding: '2px 0' }}>tap to override</div>}
       </div>
     </div>
   );
