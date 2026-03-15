@@ -107,7 +107,12 @@ export default function TrackView({ data, onEditDay }) {
           cursor: 'pointer', width: '100%', textAlign: 'left', marginBottom: 8, fontFamily: 'var(--font)',
         }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-            <span style={{ fontSize: 13, fontWeight: 600 }}>{formatDate(day.date)}</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ fontSize: 13, fontWeight: 600 }}>{formatDate(day.date)}</span>
+              {day.entryMode === 'quick' && (
+                <span style={{ fontSize: 9, fontWeight: 600, color: 'var(--teal)', background: 'rgba(45,212,191,0.12)', padding: '2px 8px', borderRadius: 4 }}>Quick</span>
+              )}
+            </div>
             {day.crash && <CrashBadge />}
           </div>
           <DaySummary day={day} compact />

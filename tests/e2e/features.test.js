@@ -379,6 +379,139 @@ test.describe('Auto-Calculate Overall Symptom', () => {
   });
 });
 
+// ========== Quick Log Mode ==========
+
+test.describe('Quick Log - Mode Selector', () => {
+  test('shows Quick Log and Full Log mode selector in day editor', async ({ page }) => {
+    await openDayEditor(page);
+    await expect(page.getByRole('radio', { name: 'Quick Log' })).toBeVisible({ timeout: 2000 });
+    await expect(page.getByRole('radio', { name: 'Full Log' })).toBeVisible({ timeout: 2000 });
+    // Full Log should be active by default
+    const fullBtn = page.getByRole('radio', { name: 'Full Log' });
+    await expect(fullBtn).toHaveAttribute('aria-checked', 'true');
+  });
+
+  test('Quick Log mode shows only essential fields', async ({ page }) => {
+    await openDayEditor(page);
+    // Switch to Quick Log
+    await page.getByRole('radio', { name: 'Quick Log' }).click();
+    await page.waitForTimeout(300);
+    // Quick Log fields should be visible
+    await expect(page.locator('[aria-label="Overall Activity score selector"]')).toBeVisible({ timeout: 2000 });
+    await expect(page.locator('[aria-label="Overall Symptoms score selector"]')).toBeVisible({ timeout: 2000 });
+    await expect(page.locator('[aria-label="Crash today"]')).toBeVisible({ timeout: 2000 });
+    await expect(page.locator('[aria-label="Sleep quality"]')).toBeVisible({ timeout: 2000 });
+    // Full Log fields should NOT be visible
+    await expect(page.locator('[aria-label="Physical score selector"]')).not.toBeVisible({ timeout: 1000 });
+    await expect(page.locator('[aria-label="Mental score selector"]')).not.toBeVisible({ timeout: 1000 });
+    await expect(page.locator('[aria-label="Emotional score selector"]')).not.toBeVisible({ timeout: 1000 });
+  });
+
+  test('saves Quick Log entry and shows in recent entries with Quick badge', async ({ page }) => {
+    await openDayEditor(page);
+    await page.getByRole('radio', { name: 'Quick Log' }).click();
+    await page.waitForTimeout(300);
+    // Fill required fields
+    const actGroup = page.locator('[aria-label="Overall Activity score selector"]');
+    await actGroup.getByRole('radio', { name: '5', exact: true }).click();
+    const symGroup = page.locator('[aria-label="Overall Symptoms score selector"]');
+    await symGroup.getByRole('radio', { name: '3', exact: true }).click();
+    // Set crash to No
+    await page.locator('[aria-label="Crash today"]').getByRole('radio', { name: 'No' }).click();
+    // Set sleep to Refreshing
+    await page.locator('[aria-label="Sleep quality"]').getByRole('radio', { name: 'Refreshing', exact: true }).click();
+    // Save
+    await page.getByText('Save').first().click();
+    await page.waitForTimeout(500);
+    // Verify entry appears in recent entries with Quick badge
+    // The Quick badge is a span inside the recent entry
+    await expect(page.locator('span').filter({ hasText: /^Quick$/ })).toBeVisible({ timeout: 2000 });
+  });
+});
+
+test.describe('Quick Log - Mode Switching', () => {
+  test('warns when switching from Full to Quick on existing entry with data', async ({ page }) => {
+    await openDayEditor(page);
+    // Fill some full-log data
+    await selectScore(page, 'Physical', 5);
+    await selectScore(page, 'Mental', 3);
+    await page.waitForTimeout(300);
+    // Set up dialog handler before clicking
+    page.on('dialog', dialog => dialog.dismiss());
+    // Try switching to Quick mode
+    await page.getByRole('radio', { name: 'Quick Log' }).click();
+    await page.waitForTimeout(300);
+    // Should still be in Full Log mode (dismissed the confirm)
+    const fullBtn = page.getByRole('radio', { name: 'Full Log' });
+    await expect(fullBtn).toHaveAttribute('aria-checked', 'true');
+  });
+
+  test('preserves full data when switching to Quick and back', async ({ page }) => {
+    await openDayEditor(page);
+    // Fill some full-log data
+    await selectScore(page, 'Physical', 7);
+    await page.waitForTimeout(300);
+    // Accept the confirm dialog
+    page.on('dialog', dialog => dialog.accept());
+    // Switch to Quick
+    await page.getByRole('radio', { name: 'Quick Log' }).click();
+    await page.waitForTimeout(300);
+    // Switch back to Full
+    await page.getByRole('radio', { name: 'Full Log' }).click();
+    await page.waitForTimeout(300);
+    // Physical score 7 should still be selected
+    const physGroup = page.locator('[aria-label="Physical score selector"]');
+    const radio7 = physGroup.getByRole('radio', { name: '7', exact: true });
+    await expect(radio7).toHaveAttribute('aria-checked', 'true');
+  });
+});
+
+// ========== Learn Section PEM Definition ==========
+
+test.describe('Learn Section - PEM Definition', () => {
+  test('shows Understanding PEM: How It Differs section', async ({ page }) => {
+    await completeOnboarding(page);
+    await page.getByLabel('Learn').click();
+    await page.waitForTimeout(500);
+    await expect(page.getByText('Understanding PEM: How It Differs')).toBeVisible({ timeout: 3000 });
+  });
+
+  test('PEM section contains differential diagnosis content', async ({ page }) => {
+    await completeOnboarding(page);
+    await page.getByLabel('Learn').click();
+    await page.waitForTimeout(500);
+    // Click to expand
+    await page.getByText('Understanding PEM: How It Differs').click();
+    await page.waitForTimeout(300);
+    // Verify differential conditions are listed
+    await expect(page.getByText('Dysautonomia')).toBeVisible({ timeout: 2000 });
+    await expect(page.getByText('Mast Cell Activation Syndrome (MCAS)')).toBeVisible({ timeout: 2000 });
+    await expect(page.getByText('Fibromyalgia', { exact: true })).toBeVisible({ timeout: 2000 });
+    await expect(page.getByText('Delayed Onset Muscle Soreness (DOMS)')).toBeVisible({ timeout: 2000 });
+  });
+
+  test('shows Quick Log vs Full Log section', async ({ page }) => {
+    await completeOnboarding(page);
+    await page.getByLabel('Learn').click();
+    await page.waitForTimeout(500);
+    await expect(page.getByText('Quick Log vs Full Log')).toBeVisible({ timeout: 3000 });
+    // Expand it
+    await page.getByText('Quick Log vs Full Log').click();
+    await page.waitForTimeout(300);
+    await expect(page.getByText('Consistency matters more than detail')).toBeVisible({ timeout: 2000 });
+  });
+
+  test('PEM section mentions crash logging connection', async ({ page }) => {
+    await completeOnboarding(page);
+    await page.getByLabel('Learn').click();
+    await page.waitForTimeout(500);
+    await page.getByText('Understanding PEM: How It Differs').click();
+    await page.waitForTimeout(300);
+    await expect(page.getByText(/crash logging/i)).toBeVisible({ timeout: 2000 });
+    await expect(page.getByText(/pre-crash lookback/i)).toBeVisible({ timeout: 2000 });
+  });
+});
+
 test.describe('Auto-Calculate Save & Reload', () => {
   test('auto-calculated values persist after save and re-open', async ({ page }) => {
     await openDayEditor(page);
