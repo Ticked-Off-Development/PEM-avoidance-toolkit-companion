@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { dbGet, dbSet, dbExportAll, dbImportAll } from '../../src/db.js';
+import { dbGet, dbSet, dbExportAll, dbImportAll, migrateData } from '../../src/db.js';
 
 beforeEach(() => {
   indexedDB = new IDBFactory();
@@ -107,5 +107,85 @@ describe('dbImportAll', () => {
       const val = await dbGet(`key-${i}`);
       expect(val).toEqual({ index: i });
     }
+  });
+});
+
+describe('migrateData - override flag backfill', () => {
+  it('sets overrideActivity true when overall_activity has a value', () => {
+    const stored = {
+      days: [{ date: '2024-01-01', overall_activity: '5' }],
+    };
+    const result = migrateData(stored);
+    expect(result.days[0].overrideActivity).toBe(true);
+  });
+
+  it('sets overrideActivity false when overall_activity is empty', () => {
+    const stored = {
+      days: [{ date: '2024-01-01', overall_activity: '' }],
+    };
+    const result = migrateData(stored);
+    expect(result.days[0].overrideActivity).toBe(false);
+  });
+
+  it('sets overrideActivity false when overall_activity is null', () => {
+    const stored = {
+      days: [{ date: '2024-01-01', overall_activity: null }],
+    };
+    const result = migrateData(stored);
+    expect(result.days[0].overrideActivity).toBe(false);
+  });
+
+  it('sets overrideSymptom true when any symptom period is filled', () => {
+    const stored = {
+      days: [{ date: '2024-01-01', overall_symptom: { am: '4', mid: '', pm: '' } }],
+    };
+    const result = migrateData(stored);
+    expect(result.days[0].overrideSymptom).toBe(true);
+  });
+
+  it('sets overrideSymptom false when all symptom periods are empty', () => {
+    const stored = {
+      days: [{ date: '2024-01-01', overall_symptom: { am: '', mid: '', pm: '' } }],
+    };
+    const result = migrateData(stored);
+    expect(result.days[0].overrideSymptom).toBe(false);
+  });
+
+  it('sets overrideSymptom false when overall_symptom is missing', () => {
+    const stored = {
+      days: [{ date: '2024-01-01' }],
+    };
+    const result = migrateData(stored);
+    expect(result.days[0].overrideSymptom).toBe(false);
+  });
+
+  it('preserves existing override flags and does not re-infer', () => {
+    const stored = {
+      schemaVersion: 1,
+      days: [{
+        date: '2024-01-01',
+        overall_activity: '5',
+        overrideActivity: false,
+        overrideSymptom: true,
+      }],
+    };
+    const result = migrateData(stored);
+    expect(result.days[0].overrideActivity).toBe(false);
+    expect(result.days[0].overrideSymptom).toBe(true);
+  });
+
+  it('backfills entryMode and override flags together', () => {
+    const stored = {
+      days: [{
+        date: '2024-01-01',
+        overall_activity: '7',
+        overall_symptom: { am: '3', mid: '5', pm: '4' },
+      }],
+    };
+    const result = migrateData(stored);
+    expect(result.days[0].entryMode).toBe('full');
+    expect(result.days[0].overrideActivity).toBe(true);
+    expect(result.days[0].overrideSymptom).toBe(true);
+    expect(result.schemaVersion).toBe(2);
   });
 });

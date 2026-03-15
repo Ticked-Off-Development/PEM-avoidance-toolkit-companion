@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react';
-import { formatDate, activityColor, symptomColor, calcOverallActivity, calcOverallSymptom } from './utils.js';
+import { formatDate, activityColor, symptomColor, calcOverallActivity, calcOverallSymptom, hasGranularData } from './utils.js';
 import { SectionLabel, ScoreInput, SymptomRow, AutoScoreInput, AutoSymptomRow, BtnP, BtnS, s } from './components.jsx';
 
 function trapFocus(e, containerRef) {
@@ -11,15 +11,6 @@ function trapFocus(e, containerRef) {
   else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
 }
 
-function hasGranularData(form) {
-  if (form.physical !== '' || form.mental !== '' || form.emotional !== '') return true;
-  for (const field of ['fatigue', 'pain', 'nausea_gi', 'brain_fog']) {
-    const f = form[field];
-    if (f && (f.am !== '' || f.mid !== '' || f.pm !== '')) return true;
-  }
-  if (form.other_symptom && form.other_symptom.name) return true;
-  return false;
-}
 
 function ToggleGroup({ label, options, value, onChange }) {
   return (
@@ -45,15 +36,9 @@ export default function DayEditor({ day, onSave, onCancel, onDelete }) {
     // Restore properties that JSON stringify removes (undefined → missing)
     if (!clone.other_symptom) clone.other_symptom = { name: '', am: '', mid: '', pm: '' };
     if (!clone.nausea_gi) clone.nausea_gi = { am: '', mid: '', pm: '' };
-    // Backward compat: existing days without override fields
-    if (clone.overrideActivity === undefined) {
-      clone.overrideActivity = clone.overall_activity !== '' && clone.overall_activity != null;
-    }
-    if (clone.overrideSymptom === undefined) {
-      const os = clone.overall_symptom || { am: '', mid: '', pm: '' };
-      clone.overrideSymptom = os.am !== '' || os.mid !== '' || os.pm !== '';
-    }
-    // Backward compat: existing days without entryMode
+    // Defensive fallbacks (migration in db.js normally guarantees these exist)
+    clone.overrideActivity = clone.overrideActivity ?? false;
+    clone.overrideSymptom = clone.overrideSymptom ?? false;
     if (!clone.entryMode) clone.entryMode = 'full';
     return clone;
   });

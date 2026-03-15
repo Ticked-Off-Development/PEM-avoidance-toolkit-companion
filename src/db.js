@@ -15,11 +15,19 @@ export function migrateData(stored) {
 
   const migrated = { ...stored };
 
-  // v1 → v2: backfill entryMode on existing day records
+  // v1 → v2: backfill entryMode and override flags on existing day records
   if (version < 2 && Array.isArray(migrated.days)) {
-    migrated.days = migrated.days.map(day =>
-      day.entryMode ? day : { ...day, entryMode: 'full' }
-    );
+    migrated.days = migrated.days.map(day => {
+      const updated = day.entryMode ? day : { ...day, entryMode: 'full' };
+      if (updated.overrideActivity === undefined) {
+        updated.overrideActivity = updated.overall_activity !== '' && updated.overall_activity != null;
+      }
+      if (updated.overrideSymptom === undefined) {
+        const os = updated.overall_symptom || { am: '', mid: '', pm: '' };
+        updated.overrideSymptom = os.am !== '' || os.mid !== '' || os.pm !== '';
+      }
+      return updated;
+    });
   }
 
   migrated.schemaVersion = DATA_SCHEMA_VERSION;

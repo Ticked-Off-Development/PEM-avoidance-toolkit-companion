@@ -74,6 +74,18 @@ export function calcOverallSymptom(form, period) {
   return vals.length > 0 ? vals.reduce((a, b) => a + b, 0) / vals.length : null;
 }
 
+export function hasGranularData(form) {
+  if (form.physical !== '' || form.mental !== '' || form.emotional !== '') return true;
+  for (const field of ['fatigue', 'pain', 'nausea_gi', 'brain_fog']) {
+    const f = form[field];
+    if (f && (f.am !== '' || f.mid !== '' || f.pm !== '')) return true;
+  }
+  if (form.other_symptom && form.other_symptom.name) return true;
+  return false;
+}
+
+// Field naming: legacy fields use snake_case (overall_activity, unrefreshing_sleep);
+// newer fields added in v2 use camelCase (entryMode, overrideActivity, overrideSymptom).
 export function emptyDay(date) {
   return {
     id: `day-${date}`,
