@@ -7,7 +7,9 @@ A progressive web app for tracking post-exertional malaise, based on the Stanfor
 ## Features
 
 ### Daily Tracking
+- **Quick Log / Full Log modes** — Quick Log captures overall activity, overall symptoms, crash, and sleep in seconds; Full Log adds per-dimension activity and time-of-day symptom tracking
 - **Track** daily activity levels (physical, mental, emotional) on the OMF 0-10 scale
+- **Auto-calculated overall scores** — overall activity and overall symptom scores are computed from individual fields, with tap-to-override for manual entry
 - **Log symptoms** (fatigue, pain, nausea/GI, brain fog, plus a custom "other" symptom) three times daily (AM, midday, PM)
 - **Mark crashes** and add comments about what happened
 - **Delete entries** to correct mistakes or remove test data
@@ -22,9 +24,14 @@ A progressive web app for tracking post-exertional malaise, based on the Stanfor
 ### Planning & Export
 - **Crash Avoidance Plan** builder using the full OMF causes, barriers, and strategies checklists
 - **Export** tracking data and your plan as formatted text to share with doctors or support team
-- **CSV export** — download tracking data as a spreadsheet-ready CSV file
+- **CSV export** — download tracking data as a spreadsheet-ready CSV file, including entry mode and override indicators
 - **Backup & restore** — JSON export/import so you never lose your data
 - **Print-friendly report** — clean browser print layout for doctor visits
+
+### Learn
+- **Understanding PEM** — educational section differentiating PEM from dysautonomia, MCAS, fibromyalgia, and DOMS
+- **Connection to tracking** — explains how crash logging and pre-crash lookback relate to PEM identification
+- **Quick Log vs Full Log guide** — helps users choose the right logging mode
 
 ### Usability
 - **Onboarding tour** — 4-step guided walkthrough for new users

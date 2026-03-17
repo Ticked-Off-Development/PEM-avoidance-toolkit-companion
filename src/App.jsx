@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo, useRef, lazy, Suspense } from 'react';
-import { dbGet, dbSet, dbExportAll, dbImportAll } from './db.js';
+import { dbGet, dbSet, dbExportAll, dbImportAll, migrateData } from './db.js';
 import { emptyDay, generateExportText, generateCSV, getDateStr } from './utils.js';
 
 const TrackView = lazy(() => import('./TrackView.jsx'));
@@ -50,10 +50,15 @@ export default function App() {
   useEffect(() => {
     dbGet(DB_KEY).then(stored => {
       if (stored) {
-        setData({ days: stored.days || [], plan: stored.plan || defaultData().plan });
-        setOnboarded(stored.onboarded || false);
-        setTheme(stored.theme || 'dark');
-        if (stored.tourCompleted) setTourStep(null);
+        const migrated = migrateData(stored);
+        setData({ days: migrated.days || [], plan: migrated.plan || defaultData().plan });
+        setOnboarded(migrated.onboarded || false);
+        setTheme(migrated.theme || 'dark');
+        if (migrated.tourCompleted) setTourStep(null);
+        // Persist migrated data if schema version changed
+        if (migrated.schemaVersion !== stored.schemaVersion) {
+          dbSet(DB_KEY, migrated);
+        }
       } else {
         setData(defaultData());
       }

@@ -1,11 +1,14 @@
 import { describe, it, expect } from 'vitest';
 import {
   generateCSV,
+  generateExportText,
   computeCorrelations,
   computeCrashRisk,
   getLast30Dates,
   emptyDay,
+  avgField,
 } from '../../src/utils.js';
+import { migrateData, DATA_SCHEMA_VERSION } from '../../src/db.js';
 
 // --- Helper: create a day with specific values ---
 function makeDay(date, overrides = {}) {
@@ -33,11 +36,14 @@ describe('generateCSV', () => {
   it('includes all expected column headers', () => {
     const csv = generateCSV([]);
     const headers = csv.split('\n')[0].split(',');
-    expect(headers).toHaveLength(27);
+    expect(headers).toHaveLength(30);
     expect(headers[0]).toBe('Date');
-    expect(headers[5]).toBe('Unrefreshing Sleep');
-    expect(headers[25]).toBe('Crash');
-    expect(headers[26]).toBe('Comments');
+    expect(headers[1]).toBe('Entry Mode');
+    expect(headers[6]).toBe('Activity Override');
+    expect(headers[7]).toBe('Symptom Override');
+    expect(headers[8]).toBe('Unrefreshing Sleep');
+    expect(headers[28]).toBe('Crash');
+    expect(headers[29]).toBe('Comments');
   });
 
   it('generates one data row per day', () => {
@@ -56,10 +62,10 @@ describe('generateCSV', () => {
       makeDay('2024-01-17', { unrefreshing_sleep: null }),
     ];
     const lines = generateCSV(days).split('\n');
-    // sleep is column index 5
-    expect(lines[1].split(',')[5]).toBe('Yes');
-    expect(lines[2].split(',')[5]).toBe('No');
-    expect(lines[3].split(',')[5]).toBe('');
+    // sleep is column index 8 (Date, Entry Mode, Physical, Mental, Emotional, Overall Activity, Activity Override, Symptom Override, Unrefreshing Sleep)
+    expect(lines[1].split(',')[8]).toBe('Yes');
+    expect(lines[2].split(',')[8]).toBe('No');
+    expect(lines[3].split(',')[8]).toBe('');
   });
 
   it('maps crash field correctly', () => {
@@ -69,10 +75,10 @@ describe('generateCSV', () => {
       makeDay('2024-01-17', { crash: null }),
     ];
     const lines = generateCSV(days).split('\n');
-    // crash is column index 25 (shifted by 4 for other_symptom columns)
-    expect(lines[1].split(',')[25]).toBe('Yes');
-    expect(lines[2].split(',')[25]).toBe('No');
-    expect(lines[3].split(',')[25]).toBe('');
+    // crash is column index 28 (shifted +2 for Activity Override, Symptom Override columns)
+    expect(lines[1].split(',')[28]).toBe('Yes');
+    expect(lines[2].split(',')[28]).toBe('No');
+    expect(lines[3].split(',')[28]).toBe('');
   });
 
   it('includes symptom AM/Mid/PM values', () => {
@@ -366,5 +372,288 @@ describe('getLast30Dates', () => {
       const expected = `${prev.getFullYear()}-${String(prev.getMonth()+1).padStart(2,'0')}-${String(prev.getDate()).padStart(2,'0')}`;
       expect(dates[i]).toBe(expected);
     }
+  });
+});
+
+// --- Quick Log: entryMode data model ---
+
+describe('Quick Log - emptyDay entryMode', () => {
+  it('emptyDay includes entryMode: "full" by default', () => {
+    const day = emptyDay('2024-01-15');
+    expect(day.entryMode).toBe('full');
+  });
+
+  it('makeDay preserves entryMode when set to quick', () => {
+    const day = makeDay('2024-01-15', { entryMode: 'quick' });
+    expect(day.entryMode).toBe('quick');
+  });
+
+  it('Quick Log entry has null individual dimensions and only overall fields', () => {
+    const day = makeDay('2024-01-15', {
+      entryMode: 'quick',
+      overall_activity: '5',
+      overrideActivity: true,
+      overall_symptom: { am: '6', mid: '', pm: '' },
+      overrideSymptom: true,
+      crash: false,
+      unrefreshing_sleep: true,
+      // physical, mental, emotional remain empty from emptyDay
+    });
+    expect(day.entryMode).toBe('quick');
+    expect(day.overall_activity).toBe('5');
+    expect(day.overall_symptom.am).toBe('6');
+    expect(day.overall_symptom.mid).toBe('');
+    expect(day.overall_symptom.pm).toBe('');
+    expect(day.physical).toBe('');
+    expect(day.mental).toBe('');
+    expect(day.emotional).toBe('');
+  });
+});
+
+// --- Quick Log: CSV export ---
+
+describe('Quick Log - generateCSV with entryMode', () => {
+  it('includes Entry Mode column header', () => {
+    const csv = generateCSV([]);
+    const headers = csv.split('\n')[0].split(',');
+    expect(headers).toContain('Entry Mode');
+    expect(headers).toContain('Activity Override');
+    expect(headers).toContain('Symptom Override');
+    expect(headers).toHaveLength(30);
+  });
+
+  it('Quick Log rows have "quick" in Entry Mode column', () => {
+    const days = [makeDay('2024-01-15', {
+      entryMode: 'quick',
+      overall_activity: '5',
+      overall_symptom: { am: '6', mid: '', pm: '' },
+      crash: false,
+      unrefreshing_sleep: true,
+    })];
+    const csv = generateCSV(days);
+    const row = csv.split('\n')[1].split(',');
+    // Entry Mode is column index 1 (after Date)
+    expect(row[1]).toBe('quick');
+  });
+
+  it('Full Log rows have "full" in Entry Mode column', () => {
+    const days = [makeDay('2024-01-15', { entryMode: 'full', physical: '3' })];
+    const csv = generateCSV(days);
+    const row = csv.split('\n')[1].split(',');
+    expect(row[1]).toBe('full');
+  });
+
+  it('legacy entries without entryMode default to "full" in CSV', () => {
+    const day = makeDay('2024-01-15', { physical: '3' });
+    delete day.entryMode;
+    const csv = generateCSV([day]);
+    const row = csv.split('\n')[1].split(',');
+    expect(row[1]).toBe('full');
+  });
+
+  it('Quick Log rows have empty cells for individual dimensions', () => {
+    const days = [makeDay('2024-01-15', {
+      entryMode: 'quick',
+      overall_activity: '5',
+      overall_symptom: { am: '6', mid: '', pm: '' },
+    })];
+    const csv = generateCSV(days);
+    const row = csv.split('\n')[1].split(',');
+    // Physical is column index 2 (Date, Entry Mode, Physical)
+    expect(row[2]).toBe('');
+    expect(row[3]).toBe('');
+    expect(row[4]).toBe('');
+  });
+});
+
+// --- Quick Log: text export ---
+
+describe('Quick Log - generateExportText with entryMode', () => {
+  it('includes Mode column in text export header', () => {
+    const text = generateExportText([], { causes: [], barriers: [], strategies: [] });
+    expect(text).toContain('Mode');
+  });
+
+  it('shows quick mode in text export for quick entries', () => {
+    const days = [makeDay('2024-01-15', {
+      entryMode: 'quick',
+      overall_activity: '5',
+      overall_symptom: { am: '6', mid: '', pm: '' },
+      crash: false,
+      unrefreshing_sleep: false,
+    })];
+    const text = generateExportText(days, { causes: [], barriers: [], strategies: [] });
+    expect(text).toContain('quick');
+  });
+});
+
+// --- Quick Log: statistical calculations with null fields ---
+
+describe('Quick Log - computeCorrelations with null dimensions', () => {
+  it('handles Quick Log entries with null individual dimensions', () => {
+    // Mix of quick and full entries
+    const days = [
+      // 5 full entries
+      ...Array.from({ length: 5 }, (_, i) => makeDay(
+        `2024-01-${String(i + 1).padStart(2, '0')}`,
+        {
+          entryMode: 'full',
+          physical: String(i + 1),
+          mental: String(i + 2),
+          emotional: String(i),
+          overall_activity: String(i + 1),
+          fatigue: { am: String(i + 1), mid: String(i + 1), pm: String(i + 1) },
+          overall_symptom: { am: String(i + 1), mid: String(i + 1), pm: String(i + 1) },
+        }
+      )),
+      // 5 quick entries (no individual dimensions)
+      ...Array.from({ length: 5 }, (_, i) => makeDay(
+        `2024-01-${String(i + 6).padStart(2, '0')}`,
+        {
+          entryMode: 'quick',
+          overall_activity: String(i + 3),
+          overall_symptom: { am: String(i + 3), mid: '', pm: '' },
+        }
+      )),
+    ];
+    const result = computeCorrelations(days);
+    expect(result).toHaveProperty('labels');
+    expect(result).toHaveProperty('matrix');
+    // Physical only has 5 valid entries, so correlations involving it should still compute
+    const physIdx = result.labels.indexOf('Physical');
+    expect(physIdx).toBeGreaterThanOrEqual(0);
+  });
+});
+
+describe('Quick Log - computeCrashRisk with quick entries', () => {
+  it('works correctly with Quick Log entries (uses overall_activity)', () => {
+    const days = Array.from({ length: 10 }, (_, i) => makeDay(
+      `2024-01-${String(i + 1).padStart(2, '0')}`,
+      {
+        entryMode: 'quick',
+        overall_activity: '4',
+        overall_symptom: { am: '3', mid: '', pm: '' },
+      }
+    ));
+    const result = computeCrashRisk(days);
+    expect(result).not.toBeNull();
+    expect(result.atRisk).toBe(false);
+    expect(result.mean).toBe('4.0');
+  });
+});
+
+describe('Quick Log - avgField with single period', () => {
+  it('returns the single value when only am is filled', () => {
+    expect(avgField({ am: '6', mid: '', pm: '' })).toBe(6);
+  });
+
+  it('returns null when all periods are empty', () => {
+    expect(avgField({ am: '', mid: '', pm: '' })).toBeNull();
+  });
+});
+
+// --- Data Migration ---
+
+describe('migrateData', () => {
+  it('returns null/undefined input unchanged', () => {
+    expect(migrateData(null)).toBeNull();
+    expect(migrateData(undefined)).toBeUndefined();
+  });
+
+  it('backfills entryMode on legacy day records without it', () => {
+    const stored = {
+      days: [
+        { date: '2024-01-01', physical: '3', mental: '4' },
+        { date: '2024-01-02', physical: '5' },
+      ],
+      plan: { causes: [], barriers: [], strategies: [] },
+    };
+    const migrated = migrateData(stored);
+    expect(migrated.days[0].entryMode).toBe('full');
+    expect(migrated.days[1].entryMode).toBe('full');
+  });
+
+  it('does not overwrite existing entryMode values', () => {
+    const stored = {
+      days: [
+        { date: '2024-01-01', entryMode: 'quick', overall_activity: '5' },
+        { date: '2024-01-02', entryMode: 'full', physical: '3' },
+      ],
+      plan: { causes: [], barriers: [], strategies: [] },
+    };
+    const migrated = migrateData(stored);
+    expect(migrated.days[0].entryMode).toBe('quick');
+    expect(migrated.days[1].entryMode).toBe('full');
+  });
+
+  it('sets schemaVersion to current DATA_SCHEMA_VERSION', () => {
+    const stored = {
+      days: [{ date: '2024-01-01' }],
+      plan: { causes: [], barriers: [], strategies: [] },
+    };
+    const migrated = migrateData(stored);
+    expect(migrated.schemaVersion).toBe(DATA_SCHEMA_VERSION);
+  });
+
+  it('skips migration if schemaVersion is already current', () => {
+    const stored = {
+      schemaVersion: DATA_SCHEMA_VERSION,
+      days: [
+        { date: '2024-01-01' }, // no entryMode — but migration should NOT run
+      ],
+      plan: { causes: [], barriers: [], strategies: [] },
+    };
+    const migrated = migrateData(stored);
+    // Should be returned as-is (same reference)
+    expect(migrated).toBe(stored);
+    // entryMode was NOT added since migration was skipped
+    expect(migrated.days[0].entryMode).toBeUndefined();
+  });
+
+  it('is non-destructive — preserves all existing fields', () => {
+    const stored = {
+      days: [{
+        date: '2024-01-01',
+        physical: '3',
+        mental: '5',
+        emotional: '2',
+        overall_activity: '4',
+        fatigue: { am: '3', mid: '4', pm: '5' },
+        crash: true,
+        comments: 'bad day',
+      }],
+      plan: { causes: ['heat'], barriers: ['work'], strategies: ['rest'] },
+      onboarded: true,
+      theme: 'light',
+      tourCompleted: true,
+    };
+    const migrated = migrateData(stored);
+    expect(migrated.days[0].physical).toBe('3');
+    expect(migrated.days[0].mental).toBe('5');
+    expect(migrated.days[0].crash).toBe(true);
+    expect(migrated.days[0].comments).toBe('bad day');
+    expect(migrated.plan.causes).toEqual(['heat']);
+    expect(migrated.onboarded).toBe(true);
+    expect(migrated.theme).toBe('light');
+  });
+
+  it('handles empty days array', () => {
+    const stored = {
+      days: [],
+      plan: { causes: [], barriers: [], strategies: [] },
+    };
+    const migrated = migrateData(stored);
+    expect(migrated.days).toEqual([]);
+    expect(migrated.schemaVersion).toBe(DATA_SCHEMA_VERSION);
+  });
+
+  it('handles stored data without days array', () => {
+    const stored = {
+      plan: { causes: [], barriers: [], strategies: [] },
+      onboarded: true,
+    };
+    const migrated = migrateData(stored);
+    expect(migrated.schemaVersion).toBe(DATA_SCHEMA_VERSION);
+    expect(migrated.plan).toBeDefined();
   });
 });
