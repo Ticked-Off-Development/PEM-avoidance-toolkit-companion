@@ -10,7 +10,7 @@ export default defineConfig({
   },
   test: {
     environment: 'happy-dom',
-    include: ['tests/unit/**/*.test.js'],
+    include: ['tests/unit/**/*.test.{js,jsx}'],
     setupFiles: ['tests/unit/setup.js'],
   },
 })
