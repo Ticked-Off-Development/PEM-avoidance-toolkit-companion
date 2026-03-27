@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useMemo, useRef, lazy, Suspense } from 'react';
 import { dbGet, dbSet, dbExportAll, dbImportAll } from './db.js';
-import { emptyDay, generateExportText, generateCSV, getDateStr } from './utils.js';
+import { emptyDay, generateExportText, generateCSV, getDateStr, applyDefaults } from './utils.js';
 
 const TrackView = lazy(() => import('./TrackView.jsx'));
 const PatternsView = lazy(() => import('./PatternsView.jsx'));
@@ -50,7 +50,7 @@ export default function App() {
   useEffect(() => {
     dbGet(DB_KEY).then(stored => {
       if (stored) {
-        setData({ days: stored.days || [], plan: stored.plan || defaultData().plan });
+        setData({ days: (stored.days || []).map(applyDefaults), plan: stored.plan || defaultData().plan });
         setOnboarded(stored.onboarded || false);
         setTheme(stored.theme || 'dark');
         if (stored.tourCompleted) setTourStep(null);
@@ -141,6 +141,9 @@ export default function App() {
           sanitized[key] = value;
         }
         if (Object.keys(sanitized).length === 0) throw new Error('No valid data found');
+        if (sanitized.appdata && Array.isArray(sanitized.appdata.days)) {
+          sanitized.appdata.days = sanitized.appdata.days.map(applyDefaults);
+        }
         await dbImportAll(sanitized);
         window.location.reload();
       } catch {

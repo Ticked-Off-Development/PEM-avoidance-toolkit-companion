@@ -138,15 +138,19 @@ export default function PatternsView({ data }) {
   };
 
   const numOrNull = v => (v == null || v === '' ? null : (isNaN(Number(v)) ? null : Number(v)));
+
+  const fullCrashDays = crashDays.filter(d => d.entryMode !== 'quick');
+  const fullNonCrash = nonCrash.filter(d => d.entryMode !== 'quick');
+
   const comps = [
-    ['Overall Activity', d => numOrNull(d.overall_activity)],
-    ['Physical', d => numOrNull(d.physical)],
-    ['Mental', d => numOrNull(d.mental)],
-    ['Emotional', d => numOrNull(d.emotional)],
-    ['Fatigue', d => avgField(d.fatigue)],
-    ['Pain', d => avgField(d.pain)],
-    ['Brain Fog', d => avgField(d.brain_fog)],
-    ['Overall Symptom', d => avgField(d.overall_symptom)],
+    ['Overall Activity', d => numOrNull(d.overall_activity), false],
+    ['Physical', d => numOrNull(d.physical), true],
+    ['Mental', d => numOrNull(d.mental), true],
+    ['Emotional', d => numOrNull(d.emotional), true],
+    ['Fatigue', d => avgField(d.fatigue), true],
+    ['Pain', d => avgField(d.pain), true],
+    ['Brain Fog', d => avgField(d.brain_fog), true],
+    ['Overall Symptom', d => avgField(d.overall_symptom), false],
   ];
 
   const preCrash = [];
@@ -197,13 +201,19 @@ export default function PatternsView({ data }) {
             <span style={{ width: 55, textAlign: 'right', color: 'var(--red)' }}>Crash</span>
             <span style={{ width: 55, textAlign: 'right', color: 'var(--grn)' }}>OK</span>
           </div>
-          {comps.map(([label, fn]) => (
+          {comps.map(([label, fn, fullOnly]) => {
+            const cDays = fullOnly ? fullCrashDays : crashDays;
+            const nDays = fullOnly ? fullNonCrash : nonCrash;
+            const cVal = cDays.length > 0 ? av(cDays, fn) : 'N/A';
+            const nVal = nDays.length > 0 ? av(nDays, fn) : 'N/A';
+            return (
             <div key={label} style={{ display: 'flex', gap: 8, fontSize: 13, padding: '6px 4px', borderBottom: '1px solid rgba(42,51,64,0.2)', alignItems: 'center' }}>
               <span style={{ flex: 1, color: 'var(--tx-m)' }}>{label}</span>
-              <span style={{ width: 55, textAlign: 'right', fontFamily: 'var(--mono)', color: 'var(--red)', fontWeight: 600 }}>{av(crashDays, fn)}</span>
-              <span style={{ width: 55, textAlign: 'right', fontFamily: 'var(--mono)', color: 'var(--grn)', fontWeight: 600 }}>{av(nonCrash, fn)}</span>
+              <span style={{ width: 55, textAlign: 'right', fontFamily: 'var(--mono)', color: 'var(--red)', fontWeight: 600 }}>{cVal}</span>
+              <span style={{ width: 55, textAlign: 'right', fontFamily: 'var(--mono)', color: 'var(--grn)', fontWeight: 600 }}>{nVal}</span>
             </div>
-          ))}
+            );
+          })}
         </Card>
       )}
 

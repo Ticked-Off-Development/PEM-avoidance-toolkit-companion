@@ -89,6 +89,34 @@ export function emptyDay(date) {
     overall_symptom: { am: '', mid: '', pm: '' },
     crash: null,
     comments: '',
+    entryMode: 'full',
+    schemaVersion: 1,
+  };
+}
+
+const EMPTY_SYMPTOM = { am: '', mid: '', pm: '' };
+
+export function applyDefaults(day) {
+  if (!day || typeof day !== 'object') return day;
+  return {
+    ...day,
+    entryMode: day.entryMode || 'full',
+    schemaVersion: day.schemaVersion != null ? day.schemaVersion : 0,
+    overrideActivity: day.overrideActivity ?? false,
+    overrideSymptom: day.overrideSymptom ?? false,
+    crash: day.crash ?? null,
+    comments: day.comments ?? '',
+    unrefreshing_sleep: day.unrefreshing_sleep ?? null,
+    physical: day.physical ?? '',
+    mental: day.mental ?? '',
+    emotional: day.emotional ?? '',
+    overall_activity: day.overall_activity ?? '',
+    fatigue: day.fatigue || { ...EMPTY_SYMPTOM },
+    pain: day.pain || { ...EMPTY_SYMPTOM },
+    nausea_gi: day.nausea_gi || { ...EMPTY_SYMPTOM },
+    brain_fog: day.brain_fog || { ...EMPTY_SYMPTOM },
+    other_symptom: day.other_symptom || { name: '', ...EMPTY_SYMPTOM },
+    overall_symptom: day.overall_symptom || { ...EMPTY_SYMPTOM },
   };
 }
 
@@ -100,7 +128,7 @@ export function generateCSV(days) {
     'Brain Fog AM', 'Brain Fog Mid', 'Brain Fog PM',
     'Other Symptom Name', 'Other Symptom AM', 'Other Symptom Mid', 'Other Symptom PM',
     'Overall Symptom AM', 'Overall Symptom Mid', 'Overall Symptom PM',
-    'Crash', 'Comments',
+    'Crash', 'Comments', 'Entry Mode', 'Activity Override', 'Symptom Override',
   ];
   const esc = (v) => {
     let s = String(v == null ? '' : v);
@@ -121,6 +149,9 @@ export function generateCSV(days) {
       d.overall_symptom?.am, d.overall_symptom?.mid, d.overall_symptom?.pm,
       d.crash ? 'Yes' : d.crash === false ? 'No' : '',
       d.comments || '',
+      d.entryMode || '',
+      d.overrideActivity === true ? 'Yes' : d.overrideActivity === false ? 'No' : '',
+      d.overrideSymptom === true ? 'Yes' : d.overrideSymptom === false ? 'No' : '',
     ].map(esc).join(','));
   });
   return rows.join('\n');
@@ -237,15 +268,16 @@ export function generateExportText(days, plan) {
   }
 
   lines.push('=== TRACKING DATA ===', '');
-  lines.push('Date       | Activity | Symptom | Sleep     | Crash | Comments');
-  lines.push('-'.repeat(75));
+  lines.push('Date            | Activity | Symptom | Sleep     | Crash | Comments');
+  lines.push('-'.repeat(80));
   days.forEach(d => {
     const sym = avgField(d.overall_symptom);
     const symStr = sym !== null ? sym.toFixed(1).padEnd(7) : '  -    ';
     const slp = d.unrefreshing_sleep === true ? 'Unrefresh' : d.unrefreshing_sleep === false ? 'OK       ' : '  -      ';
     const crash = d.crash === true ? 'YES  ' : d.crash === false ? 'No   ' : '  -  ';
     const act = d.overall_activity != null && d.overall_activity !== '' ? String(d.overall_activity).padEnd(8) : '  -     ';
-    lines.push(`${d.date} | ${act} | ${symStr} | ${slp} | ${crash} | ${d.comments || ''}`);
+    const dateLabel = d.entryMode === 'quick' ? `${d.date} [Q]` : d.date;
+    lines.push(`${dateLabel.padEnd(15)} | ${act} | ${symStr} | ${slp} | ${crash} | ${d.comments || ''}`);
   });
 
   return lines.join('\n');

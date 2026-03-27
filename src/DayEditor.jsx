@@ -1,6 +1,8 @@
-import { useState, useRef } from 'react';
-import { formatDate, activityColor, calcOverallActivity, calcOverallSymptom } from './utils.js';
+import { useState, useRef, lazy, Suspense } from 'react';
+import { formatDate, activityColor, calcOverallActivity, calcOverallSymptom, applyDefaults } from './utils.js';
 import { SectionLabel, ScoreInput, SymptomRow, AutoScoreInput, AutoSymptomRow, BtnP, BtnS, s } from './components.jsx';
+
+const QuickLogEditor = lazy(() => import('./QuickLogEditor.jsx'));
 
 function trapFocus(e, containerRef) {
   if (e.key !== 'Tab' || !containerRef.current) return;
@@ -14,20 +16,18 @@ function trapFocus(e, containerRef) {
 export default function DayEditor({ day, onSave, onCancel, onDelete }) {
   const modalRef = useRef(null);
   const [form, setForm] = useState(() => {
-    const clone = JSON.parse(JSON.stringify(day));
-    // Restore properties that JSON stringify removes (undefined → missing)
-    if (!clone.other_symptom) clone.other_symptom = { name: '', am: '', mid: '', pm: '' };
-    if (!clone.nausea_gi) clone.nausea_gi = { am: '', mid: '', pm: '' };
+    const clone = applyDefaults(JSON.parse(JSON.stringify(day)));
     // Backward compat: existing days without override fields
-    if (clone.overrideActivity === undefined) {
+    if (day.overrideActivity === undefined) {
       clone.overrideActivity = clone.overall_activity !== '' && clone.overall_activity != null;
     }
-    if (clone.overrideSymptom === undefined) {
+    if (day.overrideSymptom === undefined) {
       const os = clone.overall_symptom || { am: '', mid: '', pm: '' };
       clone.overrideSymptom = os.am !== '' || os.mid !== '' || os.pm !== '';
     }
     return clone;
   });
+  const [mode, setMode] = useState(() => form.entryMode === 'quick' ? 'quick' : 'full');
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
   const setN = (k, sub, v) => setForm(f => ({ ...f, [k]: { ...f[k], [sub]: v } }));
 
@@ -40,6 +40,8 @@ export default function DayEditor({ day, onSave, onCancel, onDelete }) {
 
   const handleSave = () => {
     const out = { ...form };
+    out.entryMode = mode;
+    out.schemaVersion = 1;
     if (!out.overrideActivity && computedActivity !== null) {
       out.overall_activity = round1(computedActivity);
     }
@@ -53,18 +55,44 @@ export default function DayEditor({ day, onSave, onCancel, onDelete }) {
     onSave(out);
   };
 
+  const switchMode = (newMode) => {
+    if (newMode === mode) return;
+    if (newMode === 'quick' && mode === 'full') {
+      if (!window.confirm('Switching to Quick Log will hide your detailed data, but it will be preserved. Continue?')) return;
+    }
+    setMode(newMode);
+  };
+
   return (
     <div ref={modalRef} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', zIndex: 200, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }} onClick={onCancel} onKeyDown={e => { if (e.key === 'Escape') onCancel(); trapFocus(e, modalRef); }}>
       <div onClick={e => e.stopPropagation()} style={{ background: 'var(--surface)', borderRadius: '22px 22px 0 0', width: '100%', maxWidth: 520, maxHeight: '92dvh', overflowY: 'auto', padding: '22px 20px 36px', WebkitOverflowScrolling: 'touch' }}>
 
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
           <span style={{ fontSize: 16, fontWeight: 700 }}>{formatDate(form.date)}</span>
           <div style={{ display: 'flex', gap: 8 }}>
             <BtnS onClick={onCancel}>Cancel</BtnS>
-            <BtnP onClick={handleSave}>Save</BtnP>
+            {mode === 'full' && <BtnP onClick={handleSave}>Save</BtnP>}
           </div>
         </div>
 
+        <div style={{ display: 'flex', gap: 8, marginBottom: 16 }} role="tablist" aria-label="Entry mode selector">
+          {[{ id: 'quick', l: 'Quick Log' }, { id: 'full', l: 'Full Log' }].map(m => (
+            <button key={m.id} role="tab" aria-selected={mode === m.id} onClick={() => switchMode(m.id)} style={{
+              flex: 1, borderRadius: 8, padding: '10px 14px', fontSize: 14, fontWeight: 600, minHeight: 44, cursor: 'pointer',
+              fontFamily: 'var(--font)', border: '1px solid',
+              background: mode === m.id ? 'var(--acc)' : 'var(--card)',
+              color: mode === m.id ? '#fff' : 'var(--tx-m)',
+              borderColor: mode === m.id ? 'var(--acc)' : 'var(--border)',
+            }}>{m.l}</button>
+          ))}
+        </div>
+
+        {mode === 'quick' ? (
+          <Suspense fallback={<div style={{ textAlign: 'center', padding: 16, color: 'var(--tx-d)' }}>Loading&hellip;</div>}>
+            <QuickLogEditor form={form} onSave={onSave} onCancel={onCancel} />
+          </Suspense>
+        ) : (
+        <>
         <SectionLabel>Activity Levels (0-10)</SectionLabel>
         <div style={{ fontSize: 11, color: 'var(--tx-d)', marginBottom: 10 }}>0 = very low/negligible &middot; 10 = activity when fully healthy</div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
@@ -149,6 +177,8 @@ export default function DayEditor({ day, onSave, onCancel, onDelete }) {
               borderRadius: 8, padding: '12px 20px', fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'var(--font)', minHeight: 44,
             }}>Delete This Entry</button>
           </div>
+        )}
+        </>
         )}
       </div>
     </div>

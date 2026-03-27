@@ -379,6 +379,70 @@ test.describe('Auto-Calculate Overall Symptom', () => {
   });
 });
 
+test.describe('Quick Log Mode', () => {
+  test('quick log mode shows 4-field form', async ({ page }) => {
+    await openDayEditor(page);
+    // Switch to Quick Log
+    await page.getByRole('tab', { name: 'Quick Log' }).click();
+    await page.waitForTimeout(500);
+    // Should show Quick Log fields
+    await expect(page.getByText('Overall Activity (0-10)')).toBeVisible({ timeout: 2000 });
+    await expect(page.getByText('Overall Symptoms (0-10)')).toBeVisible();
+    await expect(page.getByText('Crash?')).toBeVisible();
+    await expect(page.getByText('Sleep')).toBeVisible();
+    // Should NOT show full log fields
+    await expect(page.getByText('Activity Levels (0-10)')).not.toBeVisible();
+  });
+
+  test('quick log can save with all 4 fields', async ({ page }) => {
+    await openDayEditor(page);
+    await page.getByRole('tab', { name: 'Quick Log' }).click();
+    await page.waitForTimeout(500);
+    // Fill fields
+    await selectScore(page, 'Overall Activity', 4);
+    await selectScore(page, 'Overall Symptoms', 6);
+    await page.getByLabel('No', { exact: true }).click();
+    await page.getByLabel('Refreshing').click();
+    // Save
+    await page.getByText('Save').click();
+    await page.waitForTimeout(500);
+    // Should return to track view and show the entry
+    await expect(page.getByRole('button', { name: "Edit today's entry" })).toBeVisible({ timeout: 2000 });
+  });
+
+  test('switching full to quick shows warning', async ({ page }) => {
+    await openDayEditor(page);
+    // Start in full mode, fill some data
+    await selectScore(page, 'Physical', 3);
+    // Set up dialog handler before triggering
+    page.on('dialog', dialog => dialog.dismiss());
+    // Try to switch to Quick Log — confirm will be dismissed
+    await page.getByRole('tab', { name: 'Quick Log' }).click();
+    await page.waitForTimeout(300);
+    // Should still be in Full mode (dialog was dismissed)
+    await expect(page.getByText('Activity Levels (0-10)')).toBeVisible({ timeout: 2000 });
+  });
+
+  test('mode selector shows both tabs', async ({ page }) => {
+    await openDayEditor(page);
+    await expect(page.getByRole('tab', { name: 'Quick Log' })).toBeVisible({ timeout: 2000 });
+    await expect(page.getByRole('tab', { name: 'Full Log' })).toBeVisible();
+    // Full Log should be selected by default
+    const fullTab = page.getByRole('tab', { name: 'Full Log' });
+    await expect(fullTab).toHaveAttribute('aria-selected', 'true');
+  });
+
+  test('quick log + Add note reveals comment field', async ({ page }) => {
+    await openDayEditor(page);
+    await page.getByRole('tab', { name: 'Quick Log' }).click();
+    await page.waitForTimeout(500);
+    // Click Add note
+    await page.getByLabel('Add a note').click();
+    await page.waitForTimeout(300);
+    await expect(page.getByLabel('Comments about the day')).toBeVisible({ timeout: 2000 });
+  });
+});
+
 test.describe('Auto-Calculate Save & Reload', () => {
   test('auto-calculated values persist after save and re-open', async ({ page }) => {
     await openDayEditor(page);

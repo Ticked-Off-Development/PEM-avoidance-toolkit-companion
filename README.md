@@ -7,6 +7,8 @@ A progressive web app for tracking post-exertional malaise, based on the Stanfor
 ## Features
 
 ### Daily Tracking
+- **Quick Log mode** — log overall activity, symptoms, crash, and sleep in ~30 seconds (4 taps) for low-energy days
+- **Full Log / Quick Log toggle** — switch between detailed and minimal entry modes per day
 - **Track** daily activity levels (physical, mental, emotional) on the OMF 0-10 scale
 - **Log symptoms** (fatigue, pain, nausea/GI, brain fog, plus a custom "other" symptom) three times daily (AM, midday, PM)
 - **Mark crashes** and add comments about what happened
@@ -88,7 +90,8 @@ src/
   PatternsView.jsx - Crash correlations, trends, pre-crash analysis, crash risk
   PlanView.jsx     - OMF crash avoidance plan builder
   LearnView.jsx    - Educational reference material
-  DayEditor.jsx    - Modal form for logging a day (with input validation)
+  DayEditor.jsx    - Modal form for logging a day (with mode selector and input validation)
+  QuickLogEditor.jsx - Quick Log 4-field form for low-energy entry
   components.jsx   - Shared UI components (sparklines, symptom rows)
   omfData.js       - OMF causes, barriers, strategies data
   db.js            - IndexedDB storage layer
@@ -99,6 +102,7 @@ public/
   manifest.json    - PWA manifest
   sw.js            - Service worker for offline support
   icon.svg         - App icon
+SCHEMA.md          - Data schema documentation
 ```
 
 ## Testing
