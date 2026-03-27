@@ -527,6 +527,70 @@ describe('Quick Log entries', () => {
   });
 });
 
+// --- Quick Log only dataset (no Full entries) ---
+
+describe('Quick Log only dataset', () => {
+  function makeQuickDay(date, activity, symptom, crash, sleep) {
+    return makeDay(date, {
+      entryMode: 'quick',
+      schemaVersion: 1,
+      overall_activity: String(activity),
+      overrideActivity: true,
+      overall_symptom: { am: String(symptom), mid: String(symptom), pm: String(symptom) },
+      overrideSymptom: true,
+      crash,
+      unrefreshing_sleep: sleep,
+      physical: null, mental: null, emotional: null,
+      fatigue: null, pain: null, nausea_gi: null, brain_fog: null, other_symptom: null,
+    });
+  }
+
+  it('computeCorrelations works with 100% quick log entries', () => {
+    const days = Array.from({ length: 10 }, (_, i) => makeQuickDay(
+      `2024-01-${String(i + 1).padStart(2, '0')}`, i + 1, 10 - i, false, i % 2 === 0
+    ));
+    const result = computeCorrelations(days);
+    expect(result).toHaveProperty('matrix');
+    // Activity↔Symptom should still compute (both always present)
+    const actIdx = result.labels.indexOf('Activity');
+    const symIdx = result.labels.indexOf('Symptom');
+    expect(result.matrix[actIdx][symIdx]).not.toBeNull();
+    // Physical has no valid values — correlation should be null or NaN
+    const physIdx = result.labels.indexOf('Physical');
+    if (physIdx !== -1) {
+      const val = result.matrix[physIdx][actIdx];
+      expect(val === null || Number.isNaN(val)).toBe(true);
+    }
+  });
+
+  it('computeCrashRisk works with 100% quick log entries', () => {
+    const days = Array.from({ length: 10 }, (_, i) => makeQuickDay(
+      `2024-01-${String(i + 1).padStart(2, '0')}`, 4, 5, false, false
+    ));
+    const result = computeCrashRisk(days);
+    expect(result).not.toBeNull();
+    expect(result.mean).toBe('4.0');
+  });
+
+  it('generateCSV with 100% quick log entries has all dimension cells empty', () => {
+    const days = Array.from({ length: 3 }, (_, i) => makeQuickDay(
+      `2024-01-${String(i + 1).padStart(2, '0')}`, 3, 5, false, true
+    ));
+    const csv = generateCSV(days);
+    const lines = csv.split('\n');
+    expect(lines).toHaveLength(4); // header + 3 rows
+    for (let r = 1; r < lines.length; r++) {
+      const row = lines[r].split(',');
+      // Physical, Mental, Emotional (columns 1, 2, 3) should be empty
+      expect(row[1]).toBe('');
+      expect(row[2]).toBe('');
+      expect(row[3]).toBe('');
+      // entryMode column should be 'quick'
+      expect(row[27]).toBe('quick');
+    }
+  });
+});
+
 // --- emptyDay schema version ---
 
 describe('emptyDay schema', () => {

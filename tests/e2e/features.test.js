@@ -432,6 +432,20 @@ test.describe('Quick Log Mode', () => {
     await expect(fullTab).toHaveAttribute('aria-selected', 'true');
   });
 
+  test('saved quick log entry shows Quick badge in recent entries', async ({ page }) => {
+    await openDayEditor(page);
+    await page.getByRole('tab', { name: 'Quick Log' }).click();
+    await page.waitForTimeout(500);
+    await selectScore(page, 'Overall Activity', 5);
+    await selectScore(page, 'Overall Symptoms', 3);
+    await page.getByLabel('No', { exact: true }).click();
+    await page.getByLabel('Refreshing').click();
+    await page.getByText('Save').click();
+    await page.waitForTimeout(500);
+    // The recent entries list should show a "Quick" badge
+    await expect(page.getByText('Quick')).toBeVisible({ timeout: 2000 });
+  });
+
   test('quick log + Add note reveals comment field', async ({ page }) => {
     await openDayEditor(page);
     await page.getByRole('tab', { name: 'Quick Log' }).click();

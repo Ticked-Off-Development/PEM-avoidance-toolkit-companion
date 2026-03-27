@@ -21,11 +21,16 @@ export default function QuickLogEditor({ form, onSave, onCancel: _onCancel }) {
       schemaVersion: 1,
       overall_activity: activity,
       overrideActivity: true,
+      // Quick Log stores the single symptom score in all 3 period slots so
+      // avgField() returns the correct value without special-casing. See SCHEMA.md.
       overall_symptom: { am: symptom, mid: symptom, pm: symptom },
       overrideSymptom: true,
       crash,
       unrefreshing_sleep: sleep,
       comments,
+      // Quick Log doesn't capture per-dimension data. Set to null (not '') to
+      // distinguish "not collected" from "collected but empty". applyDefaults()
+      // normalizes these to {am:'',mid:'',pm:''} on next load for safe iteration.
       physical: null,
       mental: null,
       emotional: null,

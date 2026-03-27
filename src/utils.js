@@ -111,6 +111,9 @@ export function applyDefaults(day) {
     mental: day.mental ?? '',
     emotional: day.emotional ?? '',
     overall_activity: day.overall_activity ?? '',
+    // Normalize null dimensions (from Quick Log entries) to empty objects so
+    // downstream code can safely access .am/.mid/.pm without null checks.
+    // avgField() treats all-empty objects as "no data" (returns null).
     fatigue: day.fatigue || { ...EMPTY_SYMPTOM },
     pain: day.pain || { ...EMPTY_SYMPTOM },
     nausea_gi: day.nausea_gi || { ...EMPTY_SYMPTOM },
