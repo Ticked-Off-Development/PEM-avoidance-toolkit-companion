@@ -144,7 +144,7 @@ export default function DayEditor({ day, onSave, onCancel, onDelete }) {
 
         <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 20 }}>
           <BtnS onClick={onCancel}>Cancel</BtnS>
-          <BtnP onClick={handleSave} disabled={!touched} style={!touched ? { opacity: 0.35, cursor: 'default' } : undefined}>Save</BtnP>
+          <BtnP {...saveProps}>Save</BtnP>
         </div>
 
         {onDelete && (
