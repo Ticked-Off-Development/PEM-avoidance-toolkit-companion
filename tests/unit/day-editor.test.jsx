@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen, fireEvent, act, cleanup } from '@testing-library/react';
+import { render, screen, fireEvent, act } from '@testing-library/react';
 import DayEditor from '../../src/DayEditor.jsx';
 import { emptyDay } from '../../src/utils.js';
 

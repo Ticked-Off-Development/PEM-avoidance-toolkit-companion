@@ -58,6 +58,8 @@ export default function DayEditor({ day, onSave, onCancel, onDelete }) {
     onSave(out);
   };
 
+  const saveProps = { onClick: handleSave, disabled: !touched, style: !touched ? { opacity: 0.35, cursor: 'default' } : undefined };
+
   return (
     <div ref={modalRef} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', zIndex: 200, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }} onClick={onCancel} onKeyDown={e => { if (e.key === 'Escape') onCancel(); trapFocus(e, modalRef); }}>
       <div onClick={e => e.stopPropagation()} style={{ background: 'var(--surface)', borderRadius: '22px 22px 0 0', width: '100%', maxWidth: 520, maxHeight: '92dvh', overflowY: 'auto', padding: '22px 20px 36px', WebkitOverflowScrolling: 'touch' }}>
@@ -66,7 +68,7 @@ export default function DayEditor({ day, onSave, onCancel, onDelete }) {
           <span style={{ fontSize: 16, fontWeight: 700 }}>{formatDate(form.date)}</span>
           <div style={{ display: 'flex', gap: 8 }}>
             <BtnS onClick={onCancel}>Cancel</BtnS>
-            <BtnP onClick={handleSave} disabled={!touched} style={!touched ? { opacity: 0.35, cursor: 'default' } : undefined}>Save</BtnP>
+            <BtnP {...saveProps}>Save</BtnP>
           </div>
         </div>
 
