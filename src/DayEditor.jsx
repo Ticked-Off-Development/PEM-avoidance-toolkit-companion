@@ -28,8 +28,12 @@ export default function DayEditor({ day, onSave, onCancel, onDelete }) {
     }
     return clone;
   });
+  const [touched, setTouched] = useState(onDelete !== null);
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
   const setN = (k, sub, v) => setForm(f => ({ ...f, [k]: { ...f[k], [sub]: v } }));
+  const touch = (fn) => (...args) => { setTouched(true); fn(...args); };
+  const tSet = touch(set);
+  const tSetN = touch(setN);
 
   const computedActivity = calcOverallActivity(form);
   const computedSymptomAm = calcOverallSymptom(form, 'am');
@@ -39,6 +43,7 @@ export default function DayEditor({ day, onSave, onCancel, onDelete }) {
   const round1 = v => v !== null ? String(Math.round(v * 10) / 10) : '';
 
   const handleSave = () => {
+    if (!touched) return;
     const out = { ...form };
     if (!out.overrideActivity && computedActivity !== null) {
       out.overall_activity = round1(computedActivity);
@@ -53,6 +58,8 @@ export default function DayEditor({ day, onSave, onCancel, onDelete }) {
     onSave(out);
   };
 
+  const saveProps = { onClick: handleSave, disabled: !touched, style: !touched ? { opacity: 0.35, cursor: 'default' } : undefined };
+
   return (
     <div ref={modalRef} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', zIndex: 200, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }} onClick={onCancel} onKeyDown={e => { if (e.key === 'Escape') onCancel(); trapFocus(e, modalRef); }}>
       <div onClick={e => e.stopPropagation()} style={{ background: 'var(--surface)', borderRadius: '22px 22px 0 0', width: '100%', maxWidth: 520, maxHeight: '92dvh', overflowY: 'auto', padding: '22px 20px 36px', WebkitOverflowScrolling: 'touch' }}>
@@ -61,26 +68,26 @@ export default function DayEditor({ day, onSave, onCancel, onDelete }) {
           <span style={{ fontSize: 16, fontWeight: 700 }}>{formatDate(form.date)}</span>
           <div style={{ display: 'flex', gap: 8 }}>
             <BtnS onClick={onCancel}>Cancel</BtnS>
-            <BtnP onClick={handleSave}>Save</BtnP>
+            <BtnP {...saveProps}>Save</BtnP>
           </div>
         </div>
 
         <SectionLabel>Activity Levels (0-10)</SectionLabel>
         <div style={{ fontSize: 11, color: 'var(--tx-d)', marginBottom: 10 }}>0 = very low/negligible &middot; 10 = activity when fully healthy</div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-          <ScoreInput label="Physical" value={form.physical} onChange={v => set('physical', v)} colorFn={activityColor} />
-          <ScoreInput label="Mental" value={form.mental} onChange={v => set('mental', v)} colorFn={activityColor} />
-          <ScoreInput label="Emotional" value={form.emotional} onChange={v => set('emotional', v)} colorFn={activityColor} />
+          <ScoreInput label="Physical" value={form.physical} onChange={v => tSet('physical', v)} colorFn={activityColor} />
+          <ScoreInput label="Mental" value={form.mental} onChange={v => tSet('mental', v)} colorFn={activityColor} />
+          <ScoreInput label="Emotional" value={form.emotional} onChange={v => tSet('emotional', v)} colorFn={activityColor} />
           <AutoScoreInput label="Overall Activity &#9733;" computedValue={computedActivity} value={form.overall_activity} isOverride={form.overrideActivity}
-            onOverride={v => setForm(f => ({ ...f, overrideActivity: true, overall_activity: v }))}
-            onReset={() => setForm(f => ({ ...f, overrideActivity: false, overall_activity: '' }))}
+            onOverride={v => { setTouched(true); setForm(f => ({ ...f, overrideActivity: true, overall_activity: v })); }}
+            onReset={() => { setTouched(true); setForm(f => ({ ...f, overrideActivity: false, overall_activity: '' })); }}
             colorFn={activityColor} />
         </div>
 
         <SectionLabel>Unrefreshing Sleep?</SectionLabel>
         <div style={{ display: 'flex', gap: 8 }}>
           {[{ v: true, l: 'Yes' }, { v: false, l: 'No' }].map(opt => (
-            <button key={String(opt.v)} onClick={() => set('unrefreshing_sleep', opt.v)} style={{
+            <button key={String(opt.v)} onClick={() => tSet('unrefreshing_sleep', opt.v)} style={{
               borderRadius: 8, padding: '10px 18px', fontSize: 14, fontWeight: 600, minHeight: 44, cursor: 'pointer',
               border: '1px solid',
               background: form.unrefreshing_sleep === opt.v ? (opt.v ? 'var(--red-d)' : 'var(--grn-d)') : 'var(--card)',
@@ -93,32 +100,32 @@ export default function DayEditor({ day, onSave, onCancel, onDelete }) {
 
         <SectionLabel>Symptoms (0-10, AM / Midday / PM)</SectionLabel>
         <div style={{ fontSize: 11, color: 'var(--tx-d)', marginBottom: 10 }}>0 = no symptom &middot; 10 = worst experienced</div>
-        <SymptomRow label="Fatigue" data={form.fatigue} onChange={(sub, v) => setN('fatigue', sub, v)} />
-        <SymptomRow label="Pain" data={form.pain} onChange={(sub, v) => setN('pain', sub, v)} />
-        <SymptomRow label="Nausea / GI" data={form.nausea_gi} onChange={(sub, v) => setN('nausea_gi', sub, v)} />
-        <SymptomRow label="Brain Fog" data={form.brain_fog} onChange={(sub, v) => setN('brain_fog', sub, v)} />
+        <SymptomRow label="Fatigue" data={form.fatigue} onChange={(sub, v) => tSetN('fatigue', sub, v)} />
+        <SymptomRow label="Pain" data={form.pain} onChange={(sub, v) => tSetN('pain', sub, v)} />
+        <SymptomRow label="Nausea / GI" data={form.nausea_gi} onChange={(sub, v) => tSetN('nausea_gi', sub, v)} />
+        <SymptomRow label="Brain Fog" data={form.brain_fog} onChange={(sub, v) => tSetN('brain_fog', sub, v)} />
 
         <div style={{ marginTop: 10 }}>
           <div style={{ fontSize: 11, color: 'var(--tx-m)', marginBottom: 4 }}>Other symptom name:</div>
-          <input value={form.other_symptom.name} onChange={e => setN('other_symptom', 'name', e.target.value)}
+          <input value={form.other_symptom.name} onChange={e => tSetN('other_symptom', 'name', e.target.value)}
             placeholder="e.g. dizziness, anxiety&hellip;" style={{ ...s.input, fontSize: 13 }} />
         </div>
         {form.other_symptom.name && (
-          <SymptomRow label={form.other_symptom.name} data={form.other_symptom} onChange={(sub, v) => setN('other_symptom', sub, v)} />
+          <SymptomRow label={form.other_symptom.name} data={form.other_symptom} onChange={(sub, v) => tSetN('other_symptom', sub, v)} />
         )}
 
         <div style={{ marginTop: 6, padding: '8px 10px', background: 'var(--acc-d)', borderRadius: 8, border: '1px solid rgba(96,165,250,0.2)' }}>
           <AutoSymptomRow label="Overall Symptom &#9733;" computedData={{ am: computedSymptomAm, mid: computedSymptomMid, pm: computedSymptomPm }}
             data={form.overall_symptom} isOverride={form.overrideSymptom}
-            onOverride={(sub, v) => setForm(f => ({ ...f, overrideSymptom: true, overall_symptom: { ...f.overall_symptom, [sub]: v } }))}
-            onReset={() => setForm(f => ({ ...f, overrideSymptom: false, overall_symptom: { am: '', mid: '', pm: '' } }))} />
+            onOverride={(sub, v) => { setTouched(true); setForm(f => ({ ...f, overrideSymptom: true, overall_symptom: { ...f.overall_symptom, [sub]: v } })); }}
+            onReset={() => { setTouched(true); setForm(f => ({ ...f, overrideSymptom: false, overall_symptom: { am: '', mid: '', pm: '' } })); }} />
         </div>
 
         <SectionLabel>Crash?</SectionLabel>
         <div style={{ fontSize: 11, color: 'var(--tx-d)', marginBottom: 8 }}>A significant set-back in daily function</div>
         <div style={{ display: 'flex', gap: 8 }}>
           {[{ v: true, l: 'Yes — Crash' }, { v: false, l: 'No' }].map(opt => (
-            <button key={String(opt.v)} onClick={() => set('crash', opt.v)} style={{
+            <button key={String(opt.v)} onClick={() => tSet('crash', opt.v)} style={{
               borderRadius: 8, padding: '10px 18px', fontSize: 14, fontWeight: 600, minHeight: 44, cursor: 'pointer',
               border: '1px solid', fontFamily: 'var(--font)',
               background: form.crash === opt.v ? (opt.v ? 'var(--red-d)' : 'var(--grn-d)') : 'var(--card)',
@@ -130,14 +137,14 @@ export default function DayEditor({ day, onSave, onCancel, onDelete }) {
 
         <SectionLabel>Comments</SectionLabel>
         <div style={{ fontSize: 11, color: 'var(--tx-d)', marginBottom: 6 }}>Brief reminder, e.g. &quot;Shopping for 3 hours&quot;</div>
-        <textarea value={form.comments} maxLength={500} onChange={e => set('comments', e.target.value)}
+        <textarea value={form.comments} maxLength={500} onChange={e => tSet('comments', e.target.value)}
           rows={3} placeholder="A few words about the day&hellip;"
           aria-label="Comments about the day"
           style={{ ...s.input, resize: 'vertical', fontFamily: 'var(--font)' }} />
 
         <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 20 }}>
           <BtnS onClick={onCancel}>Cancel</BtnS>
-          <BtnP onClick={handleSave}>Save</BtnP>
+          <BtnP {...saveProps}>Save</BtnP>
         </div>
 
         {onDelete && (

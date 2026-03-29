@@ -195,6 +195,8 @@ test.describe('Day Editor - Delete Entry', () => {
     // Create an entry first
     await page.getByRole('button', { name: 'Log today\'s entry' }).click();
     await page.waitForTimeout(500);
+    // Interact with a field to enable Save
+    await page.getByRole('radio', { name: '5' }).first().click();
     await page.getByText('Save').first().click();
     await page.waitForTimeout(500);
     // Now open the saved entry
@@ -404,5 +406,47 @@ test.describe('Auto-Calculate Save & Reload', () => {
     const symGroup = page.locator('[aria-label="Overall Symptom ★ symptom scores (auto-calculated)"]');
     await expect(symGroup).toBeVisible({ timeout: 2000 });
     await expect(symGroup.getByText('8.0')).toBeVisible();
+  });
+});
+
+test.describe('Empty Save Prevention', () => {
+  test('save disabled on new entry until field touched', async ({ page }) => {
+    await completeOnboarding(page);
+    await page.getByRole('button', { name: 'Log today\'s entry' }).click();
+    await page.waitForTimeout(500);
+    // Save should be disabled
+    const saveBtn = page.getByText('Save').first();
+    await expect(saveBtn).toBeDisabled();
+    // Tap a score to enable Save
+    await page.getByRole('radio', { name: '0' }).first().click();
+    await expect(saveBtn).toBeEnabled();
+  });
+
+  test('save enabled on existing entry', async ({ page }) => {
+    await completeOnboarding(page);
+    // Create entry with data
+    await page.getByRole('button', { name: 'Log today\'s entry' }).click();
+    await page.waitForTimeout(500);
+    await page.getByRole('radio', { name: '5' }).first().click();
+    await page.getByText('Save').first().click();
+    await page.waitForTimeout(500);
+    // Reopen existing entry
+    await page.getByRole('button', { name: "Edit today's entry" }).click();
+    await page.waitForTimeout(500);
+    await expect(page.getByText('Save').first()).toBeEnabled();
+  });
+
+  test('tapping save without data does not create entry', async ({ page }) => {
+    await completeOnboarding(page);
+    await page.getByRole('button', { name: 'Log today\'s entry' }).click();
+    await page.waitForTimeout(500);
+    // Save is disabled, clicking should have no effect
+    const saveBtn = page.getByText('Save').first();
+    await expect(saveBtn).toBeDisabled();
+    // Cancel out
+    await page.getByText('Cancel').first().click();
+    await page.waitForTimeout(500);
+    // Should still show "Log today's entry" (not "Edit"), confirming no entry was saved
+    await expect(page.getByRole('button', { name: 'Log today\'s entry' })).toBeVisible({ timeout: 2000 });
   });
 });
